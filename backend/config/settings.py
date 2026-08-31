@@ -61,8 +61,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Database — uses PostgreSQL in production (from os.environ), SQLite locally
-DATABASE_URL = os.environ.get('DATABASE_URL') or config('DATABASE_URL', default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
+# Database Configuration
+# Uses PostgreSQL in production (Render DB), with environment override support
+DEFAULT_DB_URL = "postgresql://quiz_app_db_pwvj_user:GBq8v2mFDT9vpJ30XTJAi2yqo3999ZxO@dpg-daakabhsrm7s73f6n2qg-a.singapore-postgres.render.com/quiz_app_db_pwvj"
+DATABASE_URL = os.environ.get('DATABASE_URL') or config('DATABASE_URL', default=DEFAULT_DB_URL)
+
 DATABASES = {
     'default': dj_database_url.config(
         default=DATABASE_URL,
