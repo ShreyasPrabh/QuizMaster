@@ -10,6 +10,8 @@ const USER_KEY = 'quiz-user'
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
+      const token = localStorage.getItem(TOKEN_KEY)
+      if (!token) return null
       const saved = localStorage.getItem(USER_KEY)
       return saved ? JSON.parse(saved) : null
     } catch {

@@ -26,24 +26,15 @@ export default function Home() {
           <a href="#home" className="active">Home</a>
           <a href="#features">Features</a>
           <a href="#how-it-works">How It Works</a>
-          {user && <Link to="/topics">Topics</Link>}
         </nav>
 
         <div className="landing-nav-actions">
-          {user ? (
-            <Link to="/dashboard" className="landing-btn-primary">
-              Go to Dashboard
-            </Link>
-          ) : (
-            <>
-              <Link to="/login" className="landing-btn-ghost">
-                Log in
-              </Link>
-              <Link to="/signup" className="landing-btn-primary">
-                Sign up
-              </Link>
-            </>
-          )}
+          <Link to="/login" className="landing-btn-ghost">
+            Log in
+          </Link>
+          <Link to="/signup" className="landing-btn-primary">
+            Sign up
+          </Link>
         </div>
       </header>
 
@@ -59,7 +50,7 @@ export default function Home() {
           </p>
 
           <div className="landing-hero-btns">
-            <Link to={user ? "/dashboard" : "/signup"} className="landing-btn-hero-primary">
+            <Link to="/signup" className="landing-btn-hero-primary">
               Get Started
             </Link>
             <a href="#how-it-works" className="landing-btn-hero-secondary">
@@ -177,8 +168,8 @@ export default function Home() {
       <section className="landing-footer-cta">
         <h2>Ready to become a QuizMaster?</h2>
         <p>Join thousands of learners improving their skills every day.</p>
-        <Link to={user ? "/dashboard" : "/signup"} className="landing-btn-hero-primary">
-          {user ? 'Go to Dashboard' : 'Sign up for Free'} <ArrowRight size={18} />
+        <Link to="/signup" className="landing-btn-hero-primary">
+          Sign up for Free <ArrowRight size={18} />
         </Link>
       </section>
 
