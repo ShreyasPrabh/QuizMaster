@@ -250,6 +250,18 @@ def analytics(request):
 def profile_update(request):
     profile = request.user.profile
     data = request.data
+    user = request.user
+
+    if 'name' in data and data['name']:
+        name_str = data['name'].strip()
+        parts = name_str.split(' ', 1)
+        user.first_name = parts[0]
+        user.last_name = parts[1] if len(parts) > 1 else ''
+        user.save(update_fields=['first_name', 'last_name'])
+
+    if 'email' in data and data['email']:
+        user.email = data['email'].strip()
+        user.save(update_fields=['email'])
 
     if 'avatar' in data:
         profile.avatar = data['avatar']
@@ -261,8 +273,15 @@ def profile_update(request):
 
     profile.save(update_fields=['avatar', 'bio'])
 
-    serializer = ProfileSerializer(profile)
-    return Response(serializer.data)
+    return Response({
+        'user': {
+            'id': user.id,
+            'email': user.email,
+            'name': user.get_full_name() or user.username,
+        },
+        'avatar': profile.avatar,
+        'bio': profile.bio,
+    })
 
 
 @api_view(['GET'])

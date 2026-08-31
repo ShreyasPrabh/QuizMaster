@@ -69,9 +69,18 @@ export function AuthProvider({ children }) {
     }
   }, [signOut])
 
+  const updateUser = useCallback((updatedFields) => {
+    setUser((prev) => {
+      if (!prev) return prev
+      const updated = { ...prev, ...updatedFields }
+      localStorage.setItem(USER_KEY, JSON.stringify(updated))
+      return updated
+    })
+  }, [])
+
   const value = useMemo(
-    () => ({ user, loading, signIn, signUp, signOut }),
-    [user, loading, signIn, signUp, signOut],
+    () => ({ user, loading, signIn, signUp, signOut, updateUser }),
+    [user, loading, signIn, signUp, signOut, updateUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

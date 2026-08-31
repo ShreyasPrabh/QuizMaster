@@ -81,8 +81,16 @@ export default function AppLayout() {
     localStorage.setItem('quizmaster_notifs_cleared', 'true')
   }
 
-  const savedAvatar = localStorage.getItem('quizmaster-avatar') || '🧑‍🎓'
+  const [avatar, setAvatar] = useState(() => localStorage.getItem('quizmaster-avatar') || '🧑‍🎓')
   const displayName = user?.name || 'Learner'
+
+  useEffect(() => {
+    const handleStorage = () => {
+      setAvatar(localStorage.getItem('quizmaster-avatar') || '🧑‍🎓')
+    }
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
 
   const [searchParams, setSearchParams] = useSearchParams()
   const currentSearch = searchParams.get('q') || ''
@@ -221,7 +229,7 @@ export default function AppLayout() {
 
               <div className="qm-user-profile-btn" onClick={() => navigate('/profile')}>
                 <div className="qm-user-avatar">
-                  <span>{savedAvatar}</span>
+                  <span>{avatar}</span>
                 </div>
                 <span className="qm-user-name">{displayName}</span>
                 <ChevronDown size={15} className="qm-chevron-icon" />

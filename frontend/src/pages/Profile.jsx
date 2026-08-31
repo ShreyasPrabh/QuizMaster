@@ -12,15 +12,13 @@ const AVATAR_OPTIONS = [
 ]
 
 export default function Profile() {
-  const { user, signOut } = useAuth()
+  const { user, signOut, updateUser } = useAuth()
   const navigate = useNavigate()
 
   const [name, setName] = useState(user?.name || '')
   const [email, setEmail] = useState(user?.email || '')
-  const [avatar, setAvatar] = useState('🧑‍🎓')
+  const [avatar, setAvatar] = useState(() => localStorage.getItem('quizmaster-avatar') || '🧑‍🎓')
   const [bio, setBio] = useState('Passionate learner and software developer.')
-  const [difficulty, setDifficulty] = useState('Medium')
-  const [reminders, setReminders] = useState(true)
   const [savedSuccess, setSavedSuccess] = useState(false)
 
   // Avatar Modal State
@@ -89,11 +87,30 @@ export default function Profile() {
     setSavedSuccess(true)
     setTimeout(() => setSavedSuccess(false), 3000)
 
+    const cleanName = name.trim() || user?.name || 'User'
+    const cleanEmail = email.trim() || user?.email || ''
+
+    // 1. Immediately update local storage and reactive AuthContext
     localStorage.setItem('quizmaster-avatar', avatar)
     localStorage.setItem('quizmaster-preferred-topics', JSON.stringify(topics))
+    localStorage.removeItem('qm_leaderboard_cache') // Clear leaderboard cache so new name/avatar appears immediately
 
+    if (updateUser) {
+      updateUser({ name: cleanName, email: cleanEmail })
+    }
+
+    // 2. Persist to PostgreSQL backend
     if (user) {
-      api.put('/profile/', { bio, avatar }).catch(() => {})
+      api.put('/profile/', {
+        name: cleanName,
+        email: cleanEmail,
+        bio,
+        avatar
+      }).then((res) => {
+        if (res.data?.user && updateUser) {
+          updateUser(res.data.user)
+        }
+      }).catch(() => {})
     }
   }
 
