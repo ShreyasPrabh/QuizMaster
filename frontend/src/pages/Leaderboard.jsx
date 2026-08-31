@@ -103,17 +103,33 @@ export default function Leaderboard() {
       })
   }, [user])
 
+  // Always guarantee current user's name and avatar match live state and localStorage
+  const displayLeaders = useMemo(() => {
+    const currentName = user?.name || localStorage.getItem('quizmaster-name') || 'You'
+    const currentAvatar = localStorage.getItem('quizmaster-avatar') || '🧑‍🎓'
+    return leaders.map((item) => {
+      if (item.isCurrentUser) {
+        return {
+          ...item,
+          name: currentName,
+          avatar: currentAvatar,
+        }
+      }
+      return item
+    })
+  }, [leaders, user])
+
   // Current user's individual entry
   const currentUserEntry = useMemo(() => {
-    return leaders.find((i) => i.isCurrentUser) || leaders[0]
-  }, [leaders])
+    return displayLeaders.find((i) => i.isCurrentUser) || displayLeaders[0]
+  }, [displayLeaders])
 
   // Paginated 20 users per page
-  const totalPages = Math.ceil(leaders.length / PAGE_SIZE) || 1
+  const totalPages = Math.ceil(displayLeaders.length / PAGE_SIZE) || 1
   const paginatedLeaders = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE
-    return leaders.slice(start, start + PAGE_SIZE)
-  }, [leaders, currentPage])
+    return displayLeaders.slice(start, start + PAGE_SIZE)
+  }, [displayLeaders, currentPage])
 
   return (
     <div className="qm-leaderboard-page">

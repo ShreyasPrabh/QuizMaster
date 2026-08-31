@@ -82,14 +82,24 @@ export default function AppLayout() {
   }
 
   const [avatar, setAvatar] = useState(() => localStorage.getItem('quizmaster-avatar') || '🧑‍🎓')
-  const displayName = user?.name || 'Learner'
+  const [customName, setCustomName] = useState(() => localStorage.getItem('quizmaster-name') || '')
+  const displayName = customName || user?.name || 'Learner'
 
   useEffect(() => {
+    const handleProfileUpdate = (e) => {
+      if (e.detail?.avatar) setAvatar(e.detail.avatar)
+      if (e.detail?.name) setCustomName(e.detail.name)
+    }
     const handleStorage = () => {
       setAvatar(localStorage.getItem('quizmaster-avatar') || '🧑‍🎓')
+      setCustomName(localStorage.getItem('quizmaster-name') || '')
     }
+    window.addEventListener('quizmaster-profile-update', handleProfileUpdate)
     window.addEventListener('storage', handleStorage)
-    return () => window.removeEventListener('storage', handleStorage)
+    return () => {
+      window.removeEventListener('quizmaster-profile-update', handleProfileUpdate)
+      window.removeEventListener('storage', handleStorage)
+    }
   }, [])
 
   const [searchParams, setSearchParams] = useSearchParams()

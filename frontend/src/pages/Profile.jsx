@@ -91,6 +91,7 @@ export default function Profile() {
     const cleanEmail = email.trim() || user?.email || ''
 
     // 1. Immediately update local storage and reactive AuthContext
+    localStorage.setItem('quizmaster-name', cleanName)
     localStorage.setItem('quizmaster-avatar', avatar)
     localStorage.setItem('quizmaster-preferred-topics', JSON.stringify(topics))
     localStorage.removeItem('qm_leaderboard_cache') // Clear leaderboard cache so new name/avatar appears immediately
@@ -99,7 +100,10 @@ export default function Profile() {
       updateUser({ name: cleanName, email: cleanEmail })
     }
 
-    // 2. Persist to PostgreSQL backend
+    // 2. Broadcast change to all header & layout components in current tab
+    window.dispatchEvent(new CustomEvent('quizmaster-profile-update', { detail: { name: cleanName, avatar } }))
+
+    // 3. Persist to PostgreSQL backend
     if (user) {
       api.put('/profile/', {
         name: cleanName,
@@ -166,6 +170,7 @@ export default function Profile() {
                       setAvatar(av)
                       setShowAvatarPicker(false)
                       localStorage.setItem('quizmaster-avatar', av)
+                      window.dispatchEvent(new CustomEvent('quizmaster-profile-update', { detail: { avatar: av } }))
                     }}
                   >
                     {av}
