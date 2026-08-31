@@ -16,8 +16,26 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from django.http import JsonResponse
+
+def api_root(request):
+    return JsonResponse({
+        'name': 'QuizMaster Backend API',
+        'status': 'online',
+        'version': '1.0.0',
+        'endpoints': {
+            'topics': '/api/topics/',
+            'register': '/api/auth/register/',
+            'login': '/api/auth/login/',
+            'leaderboard': '/api/leaderboard/',
+            'analytics': '/api/analytics/',
+            'admin': '/admin/',
+        }
+    })
 
 urlpatterns = [
+    path('', api_root, name='api-root'),
     path('admin/', admin.site.urls),
     path('api/', include('quiz.urls')),
 ]
+
