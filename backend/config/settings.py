@@ -61,14 +61,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Database Configuration
-# Uses PostgreSQL in production (Render DB), with environment override support
+# Database Configuration - Explicitly parse PostgreSQL connection
 DEFAULT_DB_URL = "postgresql://quiz_app_db_pwvj_user:GBq8v2mFDT9vpJ30XTJAi2yqo3999ZxO@dpg-daakabhsrm7s73f6n2qg-a.singapore-postgres.render.com/quiz_app_db_pwvj"
-DATABASE_URL = os.environ.get('DATABASE_URL') or config('DATABASE_URL', default=DEFAULT_DB_URL)
+DATABASE_URL = os.environ.get('DATABASE_URL') or DEFAULT_DB_URL
 
 DATABASES = {
-    'default': dj_database_url.config(
-        default=DATABASE_URL,
+    'default': dj_database_url.parse(
+        DATABASE_URL,
         conn_max_age=600,
         conn_health_checks=True,
     )
