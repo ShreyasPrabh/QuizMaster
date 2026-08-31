@@ -342,14 +342,20 @@ export default function Quiz() {
       scoreCount
     )
 
+    // Broadcast immediate update so Dashboard, Leaderboard & Analytics sync in real-time
+    window.dispatchEvent(new Event('quizmaster-stats-updated'))
+    localStorage.removeItem('qm_leaderboard_cache')
+
     if (user) {
-      const answersPayload = Object.entries(selectedAnswers).map(([idx, choiceId]) => ({
-        question_id: questions[Number(idx)]?.id || idx,
-        choice_id: choiceId,
-      }))
       api.post('/quiz/submit/', {
         subtopic_id: 1,
-        answers: answersPayload,
+        topic_name: topicData.name,
+        module_title: activeModule ? activeModule.title : 'Module',
+        difficulty,
+        score: scoreCount,
+        total_questions: questions.length,
+      }).then(() => {
+        window.dispatchEvent(new Event('quizmaster-stats-updated'))
       }).catch(() => {})
     }
   }

@@ -57,37 +57,43 @@ export default function Dashboard() {
   const [preferredTopics, setPreferredTopics] = useState(() => getResolvedPreferredTopics())
 
   useEffect(() => {
-    // Sync local live work stats & preferred topics
-    const currentLocal = getUserStats()
-    setStats(currentLocal)
-    setHistory(getQuizHistory())
-    setPreferredTopics(getResolvedPreferredTopics())
-
     const handleSync = () => {
+      const currentLocal = getUserStats()
+      setHistory(getQuizHistory())
       setPreferredTopics(getResolvedPreferredTopics())
+
+      if (user) {
+        api
+          .get('/user/stats/')
+          .then((res) => {
+            if (res.data) {
+              const local = getUserStats()
+              setStats({
+                current_streak: Math.max(res.data.current_streak || 0, local.current_streak || 0),
+                problems_solved: Math.max(res.data.problems_solved || 0, local.problems_solved || 0),
+                accuracy: res.data.accuracy > 0 ? res.data.accuracy : (local.accuracy || 0),
+                max_streak: Math.max(res.data.max_streak || 0, local.max_streak || 0),
+              })
+            }
+          })
+          .catch(() => {
+            setStats(getUserStats())
+          })
+      } else {
+        setStats(currentLocal)
+      }
     }
+
+    handleSync()
+
     window.addEventListener('storage', handleSync)
     window.addEventListener('focus', handleSync)
-
-    if (user) {
-      api
-        .get('/user/stats/')
-        .then((res) => {
-          if (res.data && res.data.problems_solved > 0) {
-            setStats({
-              current_streak: res.data.current_streak ?? currentLocal.current_streak,
-              problems_solved: res.data.problems_solved ?? currentLocal.problems_solved,
-              accuracy: res.data.accuracy ?? currentLocal.accuracy,
-              max_streak: res.data.max_streak ?? currentLocal.max_streak,
-            })
-          }
-        })
-        .catch(() => {})
-    }
+    window.addEventListener('quizmaster-stats-updated', handleSync)
 
     return () => {
       window.removeEventListener('storage', handleSync)
       window.removeEventListener('focus', handleSync)
+      window.removeEventListener('quizmaster-stats-updated', handleSync)
     }
   }, [user])
 
