@@ -38,13 +38,27 @@ export function getUserStats(userId) {
   }
 }
 
-export function recordQuizAttempt(topicName, moduleTitle, difficulty, totalQuestions, correctQuestions, userId) {
+function getCompletedModulesKey(userId) {
+  return `quizmaster_completed_modules_${getCurrentUserId(userId)}`
+}
+
+export function getCompletedModules(userId) {
+  try {
+    const key = getCompletedModulesKey(userId)
+    return JSON.parse(localStorage.getItem(key) || '{}')
+  } catch {
+    return {}
+  }
+}
+
+export function recordQuizAttempt(topicName, moduleTitle, difficulty, totalQuestions, correctQuestions, userId, topicId, moduleId) {
   const currentStats = getUserStats(userId)
   const todayStr = new Date().toISOString().split('T')[0]
 
   const newTotalSolved = (currentStats.problems_solved || 0) + totalQuestions
   const newCorrectSolved = (currentStats.correct_solved || 0) + correctQuestions
   const newAccuracy = newTotalSolved > 0 ? Math.round((newCorrectSolved / newTotalSolved) * 100) : 0
+  const completedCount = (currentStats.quizzes_completed || 0) + 1
 
   // Calculate Streak
   let streak = currentStats.current_streak || 0
@@ -76,11 +90,28 @@ export function recordQuizAttempt(topicName, moduleTitle, difficulty, totalQuest
     correct_solved: newCorrectSolved,
     accuracy: newAccuracy,
     max_streak: maxStreak,
+    quizzes_completed: completedCount,
     last_quiz_date: todayStr,
   }
 
   const statsKey = getStatsKey(userId)
   localStorage.setItem(statsKey, JSON.stringify(updatedStats))
+
+  // Record completed module
+  if (topicId && moduleId && difficulty) {
+    try {
+      const compKey = getCompletedModulesKey(userId)
+      const modules = JSON.parse(localStorage.getItem(compKey) || '{}')
+      const tag = `${topicId}_${moduleId}_${difficulty}`
+      modules[tag] = {
+        score: correctQuestions,
+        total: totalQuestions,
+        percent: Math.round((correctQuestions / totalQuestions) * 100),
+        date: todayStr,
+      }
+      localStorage.setItem(compKey, JSON.stringify(modules))
+    } catch {}
+  }
 
   // Record history per user
   try {
@@ -93,6 +124,7 @@ export function recordQuizAttempt(topicName, moduleTitle, difficulty, totalQuest
       difficulty,
       total: totalQuestions,
       correct: correctQuestions,
+      percent: Math.round((correctQuestions / totalQuestions) * 100),
       date: new Date().toLocaleDateString(),
     })
     // Keep last 30

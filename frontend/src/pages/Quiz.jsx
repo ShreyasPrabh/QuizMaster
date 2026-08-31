@@ -340,7 +340,9 @@ export default function Quiz() {
       difficulty,
       questions.length,
       scoreCount,
-      user?.id
+      user?.id,
+      topicData?.id,
+      activeModule?.id
     )
 
     // Broadcast immediate update so Dashboard, Leaderboard & Analytics sync in real-time

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -11,12 +11,25 @@ import {
   Play,
   CheckCircle2,
   Star,
+  Check,
 } from 'lucide-react'
+import { useAuth } from '../context/AuthContext'
+import { getCompletedModules } from '../lib/userStats'
 import { TOPIC_MODULES } from '../data/topicModules'
 
 export default function TopicDetail() {
   const { topicId } = useParams()
+  const { user } = useAuth()
   const navigate = useNavigate()
+
+  const [completedModules, setCompletedModules] = useState(() => getCompletedModules(user?.id))
+
+  useEffect(() => {
+    setCompletedModules(getCompletedModules(user?.id))
+    const handleSync = () => setCompletedModules(getCompletedModules(user?.id))
+    window.addEventListener('quizmaster-stats-updated', handleSync)
+    return () => window.removeEventListener('quizmaster-stats-updated', handleSync)
+  }, [user])
 
   // Normalize topic key (e.g., 'java', 'python', 'cpp', 'algebra')
   const key = (topicId || 'java').toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -33,9 +46,9 @@ export default function TopicDetail() {
   const parentCategorySlug = categorySlugMap[topic?.category] || 'programming'
 
   const totalQuestions = topic.modules.reduce((acc, m) => {
-    const easyCount = m.difficulties.easy?.length || 0
-    const medCount = m.difficulties.intermediate?.length || 0
-    const hardCount = m.difficulties.hard?.length || 0
+    const easyCount = m.difficulties.easy?.length || 20
+    const medCount = m.difficulties.intermediate?.length || 20
+    const hardCount = m.difficulties.hard?.length || 20
     return acc + easyCount + medCount + hardCount
   }, 0)
 
@@ -83,6 +96,10 @@ export default function TopicDetail() {
             const medCount = module.difficulties.intermediate?.length || 20
             const hardCount = module.difficulties.hard?.length || 20
 
+            const easyComp = completedModules[`${topic.id}_${module.id}_easy`]
+            const medComp = completedModules[`${topic.id}_${module.id}_intermediate`]
+            const hardComp = completedModules[`${topic.id}_${module.id}_hard`]
+
             return (
               <div key={module.id} className="qm-card qm-module-card">
                 <div className="qm-module-top-row">
@@ -94,42 +111,48 @@ export default function TopicDetail() {
 
                 <div className="qm-module-info">
                   <h3 className="qm-module-title">{module.title}</h3>
-                  <p className="qm-module-desc">{module.description}</p>
+                  {module.description && <p className="qm-module-desc">{module.description}</p>}
                 </div>
 
                 {/* 3 DIFFICULTY TIERS BOXES */}
                 <div className="qm-hub-tier-boxes-grid mt-4">
                   <Link
                     to={`/quiz/${topic.id}/${module.id}/easy`}
-                    className="qm-hub-tier-box easy"
+                    className={`qm-hub-tier-box easy ${easyComp ? 'completed-tier' : ''}`}
                   >
                     <div className="qm-tier-icon-title">
                       <Star size={14} />
                       <span>Easy</span>
                     </div>
-                    <span className="qm-tier-qsubtitle">{easyCount} MCQs</span>
+                    <span className="qm-tier-qsubtitle">
+                      {easyComp ? `✓ Completed (${easyComp.score}/${easyComp.total})` : `${easyCount} MCQs`}
+                    </span>
                   </Link>
 
                   <Link
                     to={`/quiz/${topic.id}/${module.id}/intermediate`}
-                    className="qm-hub-tier-box intermediate"
+                    className={`qm-hub-tier-box intermediate ${medComp ? 'completed-tier' : ''}`}
                   >
                     <div className="qm-tier-icon-title">
                       <Zap size={14} />
                       <span>Medium</span>
                     </div>
-                    <span className="qm-tier-qsubtitle">{medCount} MCQs</span>
+                    <span className="qm-tier-qsubtitle">
+                      {medComp ? `✓ Completed (${medComp.score}/${medComp.total})` : `${medCount} MCQs`}
+                    </span>
                   </Link>
 
                   <Link
                     to={`/quiz/${topic.id}/${module.id}/hard`}
-                    className="qm-hub-tier-box hard"
+                    className={`qm-hub-tier-box hard ${hardComp ? 'completed-tier' : ''}`}
                   >
                     <div className="qm-tier-icon-title">
                       <Trophy size={14} />
                       <span>Hard</span>
                     </div>
-                    <span className="qm-tier-qsubtitle">{hardCount} MCQs</span>
+                    <span className="qm-tier-qsubtitle">
+                      {hardComp ? `✓ Completed (${hardComp.score}/${hardComp.total})` : `${hardCount} MCQs`}
+                    </span>
                   </Link>
                 </div>
               </div>

@@ -4373,3 +4373,14 @@ input:checked + .qm-slider:before {
 .qm-switch input:checked + .qm-slider:before {
   transform: translateX(20px);
 }
+
+/* COMPLETED MODULE TIER BADGE */
+.qm-hub-tier-box.completed-tier {
+  border-color: #10b981 !important;
+  background: var(--emerald-light) !important;
+}
+
+.qm-hub-tier-box.completed-tier .qm-tier-qsubtitle {
+  color: #10b981 !important;
+  font-weight: 700;
+}
