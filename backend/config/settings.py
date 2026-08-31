@@ -61,8 +61,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-# Database — uses Render PostgreSQL in production, SQLite locally
-DATABASE_URL = config('DATABASE_URL', default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
+# Database — uses PostgreSQL in production (from os.environ), SQLite locally
+DATABASE_URL = os.environ.get('DATABASE_URL') or config('DATABASE_URL', default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
 DATABASES = {
     'default': dj_database_url.config(
         default=DATABASE_URL,
