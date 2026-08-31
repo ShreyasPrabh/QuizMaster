@@ -19,6 +19,8 @@ export default function Profile() {
   const [email, setEmail] = useState(user?.email || '')
   const [avatar, setAvatar] = useState(() => localStorage.getItem('quizmaster-avatar') || '🧑‍🎓')
   const [bio, setBio] = useState('Passionate learner and software developer.')
+  const [difficulty, setDifficulty] = useState('Medium')
+  const [reminders, setReminders] = useState(true)
   const [savedSuccess, setSavedSuccess] = useState(false)
 
   // Avatar Modal State
