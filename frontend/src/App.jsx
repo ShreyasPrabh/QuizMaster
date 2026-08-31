@@ -3,6 +3,11 @@ import { Analytics } from '@vercel/analytics/react'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
+import About from './pages/About'
+import Contact from './pages/Contact'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import Terms from './pages/Terms'
+import FAQ from './pages/FAQ'
 import Dashboard from './pages/Dashboard'
 import Topics from './pages/Topics'
 import TopicDetail from './pages/TopicDetail'
@@ -24,36 +29,41 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/faq" element={<FAQ />} />
 
-      {/* Protected App Shell — requires login */}
-      <Route
-        element={
-          <ProtectedRoute>
-            <AppLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/topics" element={<Topics />} />
-        <Route path="/topics/:categorySlug" element={<Topics />} />
-        <Route path="/topic/:topicId" element={<TopicDetail />} />
+        {/* Protected App Shell — requires login */}
+        <Route
+          element={
+            <ProtectedRoute>
+              <AppLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/topics" element={<Topics />} />
+          <Route path="/topics/:categorySlug" element={<Topics />} />
+          <Route path="/topic/:topicId" element={<TopicDetail />} />
 
-        {/* Quiz Routes */}
-        <Route path="/quiz" element={<Quiz />} />
-        <Route path="/quiz/:topicId" element={<Quiz />} />
-        <Route path="/quiz/:topicId/:moduleId" element={<Quiz />} />
-        <Route path="/quiz/:topicId/:moduleId/:difficulty" element={<Quiz />} />
+          {/* Quiz Routes */}
+          <Route path="/quiz" element={<Quiz />} />
+          <Route path="/quiz/:topicId" element={<Quiz />} />
+          <Route path="/quiz/:topicId/:moduleId" element={<Quiz />} />
+          <Route path="/quiz/:topicId/:moduleId/:difficulty" element={<Quiz />} />
 
-        <Route path="/analytics" element={<AnalyticsPage />} />
-        <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/settings" element={<Settings />} />
-      </Route>
+          <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/settings" element={<Settings />} />
+        </Route>
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
-  </>
+        {/* Fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   )
 }
 
