@@ -26,9 +26,6 @@ export default function Home() {
           <a href="#home" className="active">Home</a>
           <a href="#features">Features</a>
           <a href="#how-it-works">How It Works</a>
-          <Link to="/about">About</Link>
-          <Link to="/faq">FAQ</Link>
-          <Link to="/contact">Contact</Link>
         </nav>
 
         <div className="landing-nav-actions">

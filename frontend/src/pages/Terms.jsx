@@ -3,12 +3,12 @@ import { ArrowLeft, FileText } from 'lucide-react'
 
 export default function Terms() {
   return (
-    <div className="landing-container">
-      {/* HEADER */}
-      <header className="landing-header">
-        <div className="landing-brand">
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-            <div className="landing-brand-icon">
+    <div className="landing-page-root">
+      {/* NAVBAR */}
+      <header className="landing-navbar">
+        <div className="landing-nav-brand">
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none' }}>
+            <div className="qm-brand-logo">
               <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
                 <rect width="28" height="28" rx="8" fill="#6366F1" />
                 <path d="M7 14L14 7L21 14L14 21L7 14Z" fill="white" fillOpacity="0.8" />
@@ -34,16 +34,16 @@ export default function Terms() {
       </header>
 
       {/* CONTENT */}
-      <main style={{ maxWidth: '850px', margin: '0 auto', padding: '3rem 1.5rem 5rem' }}>
+      <main style={{ maxWidth: '850px', margin: '0 auto', padding: '3.5rem 2rem 5rem' }}>
         <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', textDecoration: 'none', marginBottom: '2rem', fontSize: '0.9rem', fontWeight: '600' }}>
           <ArrowLeft size={16} /> Back to Home
         </Link>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-            <FileText size={22} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '1rem' }}>
+          <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366F1' }}>
+            <FileText size={24} />
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '900', color: '#0F172A', letterSpacing: '-0.02em' }}>
             Terms of Service
           </h1>
         </div>
@@ -52,39 +52,39 @@ export default function Terms() {
         </p>
 
         <div className="qm-card" style={{ padding: '2.5rem', lineHeight: '1.8', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
-          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-main)', marginTop: '0', marginBottom: '0.75rem' }}>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: '#0F172A', marginTop: '0', marginBottom: '0.75rem' }}>
             1. Acceptance of Terms
           </h2>
           <p style={{ marginBottom: '1.5rem' }}>
             By creating an account or accessing QuizClub (www.quizclub.in), you agree to be bound by these Terms of Service. If you disagree with any part of these terms, please discontinue use of the platform.
           </p>
 
-          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.75rem' }}>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.75rem' }}>
             2. User Accounts & Integrity
           </h2>
           <p style={{ marginBottom: '1.5rem' }}>
             Users are responsible for safeguarding their login credentials. Any automated botting, artificial leaderboard score inflation, or unauthorized tampering with quiz submission endpoints is strictly prohibited.
           </p>
 
-          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.75rem' }}>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.75rem' }}>
             3. Intellectual Property
           </h2>
           <p style={{ marginBottom: '1.5rem' }}>
             All original questions, software design, graphics, and curriculum content on www.quizclub.in are the exclusive property of QuizClub and protected by international intellectual property laws.
           </p>
 
-          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.75rem' }}>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.75rem' }}>
             4. Disclaimer of Warranty
           </h2>
           <p style={{ marginBottom: '1.5rem' }}>
             QuizClub is provided "as is" for educational, assessment, and training purposes. While we strive for rigorous correctness in our questions and explanations, we make no express warranties of uninterrupted service or absolute question infallibility.
           </p>
 
-          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.75rem' }}>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.75rem' }}>
             5. Modifications to Service
           </h2>
           <p>
-            QuizClub reserves the right to modify or discontinue features, categories, and scoring algorithms at any time. Inquiries may be directed to <a href="mailto:support@quizclub.in" style={{ color: 'var(--primary)', fontWeight: '600' }}>support@quizclub.in</a>.
+            QuizClub reserves the right to modify or discontinue features, categories, and scoring algorithms at any time. Inquiries may be directed to <a href="mailto:support@quizclub.in" style={{ color: '#6366F1', fontWeight: '600' }}>support@quizclub.in</a>.
           </p>
         </div>
       </main>

@@ -37,12 +37,12 @@ export default function FAQ() {
   const [openIdx, setOpenIdx] = useState(0)
 
   return (
-    <div className="landing-container">
-      {/* HEADER */}
-      <header className="landing-header">
-        <div className="landing-brand">
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-            <div className="landing-brand-icon">
+    <div className="landing-page-root">
+      {/* NAVBAR */}
+      <header className="landing-navbar">
+        <div className="landing-nav-brand">
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none' }}>
+            <div className="qm-brand-logo">
               <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
                 <rect width="28" height="28" rx="8" fill="#6366F1" />
                 <path d="M7 14L14 7L21 14L14 21L7 14Z" fill="white" fillOpacity="0.8" />
@@ -68,16 +68,16 @@ export default function FAQ() {
       </header>
 
       {/* CONTENT */}
-      <main style={{ maxWidth: '850px', margin: '0 auto', padding: '3rem 1.5rem 5rem' }}>
+      <main style={{ maxWidth: '850px', margin: '0 auto', padding: '3.5rem 2rem 5rem' }}>
         <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', textDecoration: 'none', marginBottom: '2rem', fontSize: '0.9rem', fontWeight: '600' }}>
           <ArrowLeft size={16} /> Back to Home
         </Link>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-            <HelpCircle size={22} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '1rem' }}>
+          <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366F1' }}>
+            <HelpCircle size={24} />
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '900', color: '#0F172A', letterSpacing: '-0.02em' }}>
             Frequently Asked Questions
           </h1>
         </div>
@@ -96,14 +96,15 @@ export default function FAQ() {
                   padding: '1.25rem 1.5rem',
                   cursor: 'pointer',
                   transition: 'border-color 0.2s',
+                  background: '#FFFFFF',
                 }}
                 onClick={() => setOpenIdx(isOpen ? -1 : idx)}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: 'var(--text-main)', margin: 0 }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#0F172A', margin: 0 }}>
                     {item.q}
                   </h3>
-                  <div style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center' }}>
+                  <div style={{ color: '#6366F1', display: 'flex', alignItems: 'center' }}>
                     {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                   </div>
                 </div>

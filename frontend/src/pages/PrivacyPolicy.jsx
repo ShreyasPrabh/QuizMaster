@@ -3,12 +3,12 @@ import { ArrowLeft, Shield } from 'lucide-react'
 
 export default function PrivacyPolicy() {
   return (
-    <div className="landing-container">
-      {/* HEADER */}
-      <header className="landing-header">
-        <div className="landing-brand">
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
-            <div className="landing-brand-icon">
+    <div className="landing-page-root">
+      {/* NAVBAR */}
+      <header className="landing-navbar">
+        <div className="landing-nav-brand">
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none' }}>
+            <div className="qm-brand-logo">
               <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
                 <rect width="28" height="28" rx="8" fill="#6366F1" />
                 <path d="M7 14L14 7L21 14L14 21L7 14Z" fill="white" fillOpacity="0.8" />
@@ -34,16 +34,16 @@ export default function PrivacyPolicy() {
       </header>
 
       {/* CONTENT */}
-      <main style={{ maxWidth: '850px', margin: '0 auto', padding: '3rem 1.5rem 5rem' }}>
+      <main style={{ maxWidth: '850px', margin: '0 auto', padding: '3.5rem 2rem 5rem' }}>
         <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', textDecoration: 'none', marginBottom: '2rem', fontSize: '0.9rem', fontWeight: '600' }}>
           <ArrowLeft size={16} /> Back to Home
         </Link>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1rem' }}>
-          <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)' }}>
-            <Shield size={22} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '1rem' }}>
+          <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366F1' }}>
+            <Shield size={24} />
           </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '900', color: '#0F172A', letterSpacing: '-0.02em' }}>
             Privacy Policy
           </h1>
         </div>
@@ -52,14 +52,14 @@ export default function PrivacyPolicy() {
         </p>
 
         <div className="qm-card" style={{ padding: '2.5rem', lineHeight: '1.8', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
-          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-main)', marginTop: '0', marginBottom: '0.75rem' }}>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: '#0F172A', marginTop: '0', marginBottom: '0.75rem' }}>
             1. Information We Collect
           </h2>
           <p style={{ marginBottom: '1.5rem' }}>
             When you create an account on QuizClub (www.quizclub.in), we collect your name, email address, password hash, profile avatar, and preferred learning topics. We also store your quiz scores, session times, and streak metrics to provide your personal learning analytics.
           </p>
 
-          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.75rem' }}>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.75rem' }}>
             2. How We Use Your Information
           </h2>
           <p style={{ marginBottom: '1.5rem' }}>
@@ -72,25 +72,25 @@ export default function PrivacyPolicy() {
             <li>Deliver platform analytics and performance improvements.</li>
           </ul>
 
-          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.75rem' }}>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.75rem' }}>
             3. Data Storage & Security
           </h2>
           <p style={{ marginBottom: '1.5rem' }}>
             Your account credentials are encrypted with industry-standard hashing algorithms (PBKDF2 SHA-256). All communications with www.quizclub.in are secured with TLS/SSL encryption. We do not sell or monetize your personal data.
           </p>
 
-          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.75rem' }}>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.75rem' }}>
             4. Cookies & Analytics
           </h2>
           <p style={{ marginBottom: '1.5rem' }}>
             We use essential local storage tokens for user authentication and privacy-friendly Vercel Web Analytics to track platform performance and usage metrics without third-party ad trackers.
           </p>
 
-          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-main)', marginBottom: '0.75rem' }}>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: '700', color: '#0F172A', marginBottom: '0.75rem' }}>
             5. Contact Us
           </h2>
           <p>
-            If you have questions regarding this Privacy Policy or wish to request data deletion, please contact us at <a href="mailto:support@quizclub.in" style={{ color: 'var(--primary)', fontWeight: '600' }}>support@quizclub.in</a>.
+            If you have questions regarding this Privacy Policy or wish to request data deletion, please contact us at <a href="mailto:support@quizclub.in" style={{ color: '#6366F1', fontWeight: '600' }}>support@quizclub.in</a>.
           </p>
         </div>
       </main>
