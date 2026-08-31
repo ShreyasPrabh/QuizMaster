@@ -17,7 +17,7 @@ export default function Profile() {
 
   const [name, setName] = useState(user?.name || '')
   const [email, setEmail] = useState(user?.email || '')
-  const [avatar, setAvatar] = useState(() => localStorage.getItem('quizmaster-avatar') || '🧑‍🎓')
+  const [avatar, setAvatar] = useState(() => user?.avatar || (user?.id && localStorage.getItem(`quizmaster-avatar-${user.id}`)) || '🧑‍🎓')
   const [bio, setBio] = useState('Passionate learner and software developer.')
   const [difficulty, setDifficulty] = useState('Medium')
   const [reminders, setReminders] = useState(true)
@@ -48,9 +48,7 @@ export default function Profile() {
   useEffect(() => {
     if (user?.name) setName(user.name)
     if (user?.email) setEmail(user.email)
-
-    const savedAvatar = localStorage.getItem('quizmaster-avatar')
-    if (savedAvatar) setAvatar(savedAvatar)
+    if (user?.avatar) setAvatar(user.avatar)
 
     const savedTopics = localStorage.getItem('quizmaster-preferred-topics')
     if (savedTopics) {
@@ -63,9 +61,9 @@ export default function Profile() {
     }
   }, [user])
 
-  const handleRemoveTopic = (tToRemove) => {
+  const handleRemoveTopic = (topicToRemove) => {
     setTopics((prev) => {
-      const updated = prev.filter((t) => t !== tToRemove && t !== tToRemove.name && t !== tToRemove.id)
+      const updated = prev.filter((t) => t !== topicToRemove)
       localStorage.setItem('quizmaster-preferred-topics', JSON.stringify(updated))
       return updated
     })
@@ -75,7 +73,7 @@ export default function Profile() {
     setTopics((prev) => {
       let updated
       if (prev.includes(topicName)) {
-        updated = prev.filter((item) => item !== topicName)
+        updated = prev.filter((t) => t !== topicName)
       } else {
         updated = [...prev, topicName]
       }
@@ -92,18 +90,15 @@ export default function Profile() {
     const cleanName = name.trim() || user?.name || 'User'
     const cleanEmail = email.trim() || user?.email || ''
 
-    // 1. Immediately update local storage and reactive AuthContext
-    localStorage.setItem('quizmaster-name', cleanName)
-    localStorage.setItem('quizmaster-avatar', avatar)
+    if (user?.id) {
+      localStorage.setItem(`quizmaster-avatar-${user.id}`, avatar)
+    }
     localStorage.setItem('quizmaster-preferred-topics', JSON.stringify(topics))
     localStorage.removeItem('qm_leaderboard_cache') // Clear leaderboard cache so new name/avatar appears immediately
 
     if (updateUser) {
-      updateUser({ name: cleanName, email: cleanEmail })
+      updateUser({ name: cleanName, email: cleanEmail, avatar })
     }
-
-    // 2. Broadcast change to all header & layout components in current tab
-    window.dispatchEvent(new CustomEvent('quizmaster-profile-update', { detail: { name: cleanName, avatar } }))
 
     // 3. Persist to PostgreSQL backend
     if (user) {
@@ -128,51 +123,57 @@ export default function Profile() {
   return (
     <div className="qm-profile-page">
       {/* HEADER */}
-      <div className="qm-page-welcome-header">
-        <h1>Profile</h1>
-        <p>Manage your account information, avatar, and learning preferences</p>
+      <div className="qm-profile-top-header">
+        <h1>Profile & Preferences</h1>
+        <p>Manage your public identity, study topics, and customized study preferences.</p>
       </div>
 
-      {/* 2-COLUMN PROFILE WORKSPACE */}
-      <div className="qm-profile-split-card">
-        {/* LEFT: PROFILE INFORMATION */}
-        <div className="qm-profile-info-column">
-          <h2 className="qm-column-title">Profile Information</h2>
+      <div className="qm-profile-two-column-grid">
+        {/* LEFT: PROFILE FORM */}
+        <div className="qm-profile-main-card">
+          <h2 className="qm-column-title">Account Information</h2>
 
-          <div className="qm-profile-avatar-row">
-            <div
-              className="qm-profile-avatar-big"
-              onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-              title="Click to select avatar"
-            >
-              {avatar}
+          {/* AVATAR HERO ROW */}
+          <div className="qm-avatar-change-strip">
+            <div className="qm-profile-avatar-giant">
+              <span className="giant-emoji">{avatar}</span>
             </div>
-            <div>
+            <div className="qm-avatar-actions-meta">
+              <span className="qm-avatar-heading">Profile Avatar</span>
+              <p className="qm-avatar-sub">This emoji represents you across leaderboards and stats.</p>
               <button
                 type="button"
-                className="qm-change-avatar-link"
+                className="qm-btn-outline-sm"
                 onClick={() => setShowAvatarPicker(!showAvatarPicker)}
               >
-                {showAvatarPicker ? 'Close Avatar Picker' : 'Change Avatar'}
+                <Edit3 size={14} />
+                <span>{showAvatarPicker ? 'Close Picker' : 'Change Avatar'}</span>
               </button>
             </div>
           </div>
 
-          {/* AVATAR PICKER GRID */}
+          {/* POPUP AVATAR PICKER */}
           {showAvatarPicker && (
-            <div className="qm-avatar-picker-modal">
-              <span className="qm-avatar-picker-title">Select Avatar:</span>
-              <div className="qm-avatar-options-grid">
+            <div className="qm-avatar-picker-bubble">
+              <span className="picker-title">Select your avatar:</span>
+              <div className="avatar-grid-emojis">
                 {AVATAR_OPTIONS.map((av) => (
                   <button
                     key={av}
                     type="button"
-                    className={`qm-avatar-opt-btn ${avatar === av ? 'selected' : ''}`}
+                    className={`avatar-choice-btn ${avatar === av ? 'selected' : ''}`}
                     onClick={() => {
                       setAvatar(av)
                       setShowAvatarPicker(false)
-                      localStorage.setItem('quizmaster-avatar', av)
-                      window.dispatchEvent(new CustomEvent('quizmaster-profile-update', { detail: { avatar: av } }))
+                      if (user?.id) {
+                        localStorage.setItem(`quizmaster-avatar-${user.id}`, av)
+                      }
+                      if (updateUser) {
+                        updateUser({ avatar: av })
+                      }
+                      if (user) {
+                        api.put('/profile/', { avatar: av }).catch(() => {})
+                      }
                     }}
                   >
                     {av}

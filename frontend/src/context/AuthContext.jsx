@@ -45,6 +45,9 @@ export function AuthProvider({ children }) {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(REFRESH_KEY)
     localStorage.removeItem(USER_KEY)
+    localStorage.removeItem('quizmaster-name')
+    localStorage.removeItem('quizmaster-avatar')
+    localStorage.removeItem('qm_leaderboard_cache')
     setUser(null)
   }, [])
 

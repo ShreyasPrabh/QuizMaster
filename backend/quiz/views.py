@@ -44,7 +44,7 @@ def register(request):
         user.save(update_fields=['first_name', 'last_name'])
 
     # Ensure profile exists
-    UserProfile.objects.get_or_create(user=user)
+    profile, _ = UserProfile.objects.get_or_create(user=user)
 
     refresh = RefreshToken.for_user(user)
     return Response({
@@ -54,6 +54,7 @@ def register(request):
             'id': user.id,
             'email': user.email,
             'name': user.get_full_name() or name or user.username,
+            'avatar': profile.avatar or '🧑‍🎓',
         },
     }, status=status.HTTP_201_CREATED)
 
@@ -77,7 +78,7 @@ def login_view(request):
     if not user.is_active:
         return Response({'error': 'This account has been deactivated.'}, status=status.HTTP_403_FORBIDDEN)
 
-    UserProfile.objects.get_or_create(user=user)
+    profile, _ = UserProfile.objects.get_or_create(user=user)
 
     refresh = RefreshToken.for_user(user)
     return Response({
@@ -87,6 +88,7 @@ def login_view(request):
             'id': user.id,
             'email': user.email,
             'name': user.get_full_name() or user.first_name or user.username,
+            'avatar': profile.avatar or '🧑‍🎓',
         },
     })
 
@@ -96,11 +98,13 @@ def login_view(request):
 def me_view(request):
     """Return current authenticated user info."""
     user = request.user
+    profile, _ = UserProfile.objects.get_or_create(user=user)
     return Response({
         'user': {
             'id': user.id,
             'email': user.email,
             'name': user.get_full_name() or user.username,
+            'avatar': profile.avatar or '🧑‍🎓',
         }
     })
 
@@ -278,6 +282,7 @@ def profile_update(request):
             'id': user.id,
             'email': user.email,
             'name': user.get_full_name() or user.username,
+            'avatar': profile.avatar or '🧑‍🎓',
         },
         'avatar': profile.avatar,
         'bio': profile.bio,

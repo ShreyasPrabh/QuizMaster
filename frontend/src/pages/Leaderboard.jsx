@@ -103,10 +103,10 @@ export default function Leaderboard() {
       })
   }, [user])
 
-  // Always guarantee current user's name and avatar match live state and localStorage
+  // Always guarantee current user's name and avatar match their own authenticated user profile
   const displayLeaders = useMemo(() => {
-    const currentName = user?.name || localStorage.getItem('quizmaster-name') || 'You'
-    const currentAvatar = localStorage.getItem('quizmaster-avatar') || '🧑‍🎓'
+    const currentName = user?.name || 'You'
+    const currentAvatar = user?.avatar || (user?.id && localStorage.getItem(`quizmaster-avatar-${user.id}`)) || '🧑‍🎓'
     return leaders.map((item) => {
       if (item.isCurrentUser) {
         return {

@@ -81,26 +81,8 @@ export default function AppLayout() {
     localStorage.setItem('quizmaster_notifs_cleared', 'true')
   }
 
-  const [avatar, setAvatar] = useState(() => localStorage.getItem('quizmaster-avatar') || '🧑‍🎓')
-  const [customName, setCustomName] = useState(() => localStorage.getItem('quizmaster-name') || '')
-  const displayName = customName || user?.name || 'Learner'
-
-  useEffect(() => {
-    const handleProfileUpdate = (e) => {
-      if (e.detail?.avatar) setAvatar(e.detail.avatar)
-      if (e.detail?.name) setCustomName(e.detail.name)
-    }
-    const handleStorage = () => {
-      setAvatar(localStorage.getItem('quizmaster-avatar') || '🧑‍🎓')
-      setCustomName(localStorage.getItem('quizmaster-name') || '')
-    }
-    window.addEventListener('quizmaster-profile-update', handleProfileUpdate)
-    window.addEventListener('storage', handleStorage)
-    return () => {
-      window.removeEventListener('quizmaster-profile-update', handleProfileUpdate)
-      window.removeEventListener('storage', handleStorage)
-    }
-  }, [])
+  const avatar = user?.avatar || (user?.id && localStorage.getItem(`quizmaster-avatar-${user.id}`)) || '🧑‍🎓'
+  const displayName = user?.name || 'Learner'
 
   const [searchParams, setSearchParams] = useSearchParams()
   const currentSearch = searchParams.get('q') || ''
