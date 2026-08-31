@@ -19,7 +19,7 @@ export default function Home() {
               <path d="M7 14H21" stroke="#6366F1" strokeWidth="2" />
             </svg>
           </div>
-          <span className="landing-brand-name">QuizMaster</span>
+          <span className="landing-brand-name">QuizClub</span>
         </div>
 
         <nav className="landing-nav-links">
@@ -166,8 +166,8 @@ export default function Home() {
 
       {/* FOOTER CTA */}
       <section className="landing-footer-cta">
-        <h2>Ready to become a QuizMaster?</h2>
-        <p>Join thousands of learners improving their skills every day.</p>
+        <h2>Ready to join QuizClub?</h2>
+        <p>Join thousands of learners improving their skills every day at quizclub.in</p>
         <Link to="/signup" className="landing-btn-hero-primary">
           Sign up for Free <ArrowRight size={18} />
         </Link>
@@ -176,8 +176,8 @@ export default function Home() {
       {/* FOOTER */}
       <footer className="landing-footer">
         <div className="landing-footer-brand">
-          <span>⬡ QuizMaster</span>
-          <span className="landing-footer-tagline">Learn. Quiz. Improve. Repeat.</span>
+          <span>⬡ QuizClub</span>
+          <span className="landing-footer-tagline">Learn. Quiz. Improve. Repeat. · www.quizclub.in</span>
         </div>
         <div className="landing-footer-links">
           <a href="#home">Home</a>
@@ -186,7 +186,7 @@ export default function Home() {
           <Link to="/login">Login</Link>
           <Link to="/signup">Sign Up</Link>
         </div>
-        <p className="landing-footer-copy">© 2026 QuizMaster. All rights reserved.</p>
+        <p className="landing-footer-copy">© 2026 QuizClub (www.quizclub.in). All rights reserved.</p>
       </footer>
     </div>
   )

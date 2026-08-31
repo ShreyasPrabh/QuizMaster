@@ -20,7 +20,7 @@ from django.http import JsonResponse
 
 def api_root(request):
     return JsonResponse({
-        'name': 'QuizMaster Backend API',
+        'name': 'QuizClub Backend API',
         'status': 'online',
         'version': '1.0.0',
         'endpoints': {

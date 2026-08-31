@@ -60,7 +60,7 @@ export default function Signup() {
 
         <div className="auth-form-header">
           <h1>Create your account</h1>
-          <p>Join QuizMaster and start your journey</p>
+          <p>Join QuizClub and start your journey</p>
         </div>
 
         {error && <div className="auth-error-banner">{error}</div>}

@@ -1,4 +1,4 @@
-# QuizMaster 🎯
+# QuizClub 🎯 (www.quizclub.in)
 
 An interactive, full-stack quiz and learning platform built with **React (Vite)** and **Django REST Framework**.
 

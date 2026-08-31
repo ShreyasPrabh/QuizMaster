@@ -130,7 +130,7 @@ export default function AppLayout() {
               <path d="M7 14H21" stroke="#6366F1" strokeWidth="2" />
             </svg>
           </div>
-          <span className="qm-brand-name">QuizMaster</span>
+          <span className="qm-brand-name">QuizClub</span>
         </div>
 
         <nav className="qm-sidebar-nav">
