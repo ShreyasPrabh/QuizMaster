@@ -4378,3 +4378,193 @@ input:checked + .qm-slider:before {
 .qm-switch input:checked + .qm-slider:before {
   transform: translateX(20px);
 }
+
+/* ==========================================================================
+   LIGHT THEME OVERRIDES FOR PROFILE & PREFERENCES (STUNNING CLEAN AESTHETIC)
+   ========================================================================== */
+[data-theme="light"] .qm-profile-page {
+  color: #0f172a;
+}
+
+[data-theme="light"] .qm-profile-top-header h1 {
+  color: #0f172a;
+}
+
+[data-theme="light"] .qm-profile-top-header p {
+  color: #64748b;
+}
+
+[data-theme="light"] .qm-profile-main-card,
+[data-theme="light"] .qm-profile-pref-column {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.04);
+}
+
+[data-theme="light"] .qm-column-title {
+  color: #0f172a;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+[data-theme="light"] .qm-avatar-change-strip {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .qm-profile-avatar-giant {
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, #e0e7ff 100%);
+  border: 2px solid #6366f1;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+[data-theme="light"] .qm-avatar-heading {
+  color: #0f172a;
+}
+
+[data-theme="light"] .qm-avatar-sub {
+  color: #64748b;
+}
+
+[data-theme="light"] .qm-avatar-picker-bubble {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .picker-title {
+  color: #64748b;
+}
+
+[data-theme="light"] .avatar-choice-btn {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .avatar-choice-btn:hover {
+  border-color: #6366f1;
+  background: #eef2ff;
+}
+
+[data-theme="light"] .avatar-choice-btn.selected {
+  border-color: #6366f1;
+  background: #e0e7ff;
+  box-shadow: 0 0 0 2px #6366f1;
+}
+
+[data-theme="light"] .qm-field-box label {
+  color: #334155;
+}
+
+[data-theme="light"] .qm-field-box input,
+[data-theme="light"] .qm-field-box textarea {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+
+[data-theme="light"] .qm-field-box input::placeholder,
+[data-theme="light"] .qm-field-box textarea::placeholder {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .qm-field-box input:focus,
+[data-theme="light"] .qm-field-box textarea:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+[data-theme="light"] .qm-btn-outline-sm {
+  background: #ffffff;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+[data-theme="light"] .qm-btn-outline-sm:hover {
+  background: #eef2ff;
+  color: #4f46e5;
+  border-color: #6366f1;
+}
+
+[data-theme="light"] .qm-profile-logout-btn {
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+}
+
+[data-theme="light"] .qm-profile-logout-btn:hover {
+  background: #ffe4e6;
+  border-color: #f43f5e;
+}
+
+[data-theme="light"] .qm-pref-label-row label {
+  color: #334155;
+}
+
+[data-theme="light"] .qm-topic-tag-pill {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #4338ca;
+}
+
+[data-theme="light"] .tag-remove-x {
+  color: #64748b;
+}
+
+[data-theme="light"] .tag-remove-x:hover {
+  color: #e11d48;
+}
+
+[data-theme="light"] .qm-topic-picker-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .qm-topic-picker-hint {
+  color: #64748b;
+}
+
+[data-theme="light"] .qm-topic-chip-btn {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+}
+
+[data-theme="light"] .qm-topic-chip-btn:hover {
+  border-color: #6366f1;
+  color: #4338ca;
+  background: #eef2ff;
+}
+
+[data-theme="light"] .qm-topic-chip-btn.active {
+  background: #e0e7ff;
+  border-color: #6366f1;
+  color: #3730a3;
+}
+
+[data-theme="light"] .qm-select-styled-box select {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+}
+
+[data-theme="light"] .qm-select-styled-box select:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+[data-theme="light"] .qm-select-arrow {
+  color: #64748b;
+}
+
+[data-theme="light"] .qm-reminder-toggle-row {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+[data-theme="light"] .qm-reminder-desc {
+  color: #334155;
+}
+
+[data-theme="light"] .qm-slider {
+  background-color: #cbd5e1;
+}
