@@ -1,0 +1,24 @@
+import { PROGRAMMING_TOPICS } from './programming'
+import { MATHEMATICS_TOPICS } from './mathematics'
+import { SCIENCE_TOPICS } from './science'
+import { COMPUTERSCIENCE_TOPICS } from './computerscience'
+import { GENERALKNOWLEDGE_TOPICS } from './generalknowledge'
+import { ENGLISH_TOPICS } from './english'
+
+export {
+  PROGRAMMING_TOPICS,
+  MATHEMATICS_TOPICS,
+  SCIENCE_TOPICS,
+  COMPUTERSCIENCE_TOPICS,
+  GENERALKNOWLEDGE_TOPICS,
+  ENGLISH_TOPICS,
+}
+
+export const ALL_TOPIC_MODULES = {
+  ...PROGRAMMING_TOPICS,
+  ...MATHEMATICS_TOPICS,
+  ...SCIENCE_TOPICS,
+  ...COMPUTERSCIENCE_TOPICS,
+  ...GENERALKNOWLEDGE_TOPICS,
+  ...ENGLISH_TOPICS,
+}

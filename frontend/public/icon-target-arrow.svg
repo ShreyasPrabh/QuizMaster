@@ -1,0 +1,15 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="glyph" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FB923C"/>
+      <stop offset="100%" stop-color="#DB2777"/>
+    </linearGradient>
+  </defs>
+
+  <circle cx="238" cy="274" r="118" fill="none" stroke="url(#glyph)" stroke-width="16" opacity="0.5"/>
+  <circle cx="238" cy="274" r="78" fill="none" stroke="url(#glyph)" stroke-width="16" opacity="0.75"/>
+  <circle cx="238" cy="274" r="38" fill="url(#glyph)"/>
+
+  <line x1="392" y1="120" x2="252" y2="260" stroke="url(#glyph)" stroke-width="14" stroke-linecap="round"/>
+  <path d="M 392 120 L 340 128 L 384 172 Z" fill="url(#glyph)"/>
+</svg>
