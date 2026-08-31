@@ -97,7 +97,7 @@ export default function Dashboard() {
     }
   }, [user])
 
-  const firstName = (user?.name || localStorage.getItem('quizmaster-name') || 'Learner').split(' ')[0]
+  const firstName = (user?.name || 'Learner').split(' ')[0]
 
   const recommendedQuizzes = [
     { title: 'Java', level: '5 Modules · 300 MCQs', icon: '☕', topicId: 'java' },

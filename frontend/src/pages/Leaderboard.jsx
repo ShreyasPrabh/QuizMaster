@@ -22,14 +22,14 @@ export default function Leaderboard() {
       // ignore
     }
     const localStats = getUserStats()
-    const savedAvatar = localStorage.getItem('quizmaster-avatar') || '🧑‍🎓'
+    const myAvatar = user?.avatar || (user?.id && localStorage.getItem(`quizmaster-avatar-${user.id}`)) || '🧑‍🎓'
     const myRawName = user?.name || 'You'
     const myPoints = ((localStats.correct_solved || 0) * 10) + ((localStats.problems_solved || 0) * 2)
     return [
       {
         rank: 1,
         name: myRawName,
-        avatar: savedAvatar,
+        avatar: myAvatar,
         streak: localStats.current_streak || 0,
         points: myPoints,
         medal: '🥇',
@@ -40,7 +40,7 @@ export default function Leaderboard() {
 
   useEffect(() => {
     const localStats = getUserStats()
-    const savedAvatar = localStorage.getItem('quizmaster-avatar') || '🧑‍🎓'
+    const myAvatar = user?.avatar || (user?.id && localStorage.getItem(`quizmaster-avatar-${user.id}`)) || '🧑‍🎓'
     const myRawName = user?.name || 'You'
     const myPoints = ((localStats.correct_solved || 0) * 10) + ((localStats.problems_solved || 0) * 2)
 
@@ -52,7 +52,7 @@ export default function Leaderboard() {
             if (item.isCurrentUser) {
               return {
                 ...item,
-                avatar: savedAvatar,
+                avatar: myAvatar,
                 name: myRawName,
                 streak: Math.max(item.streak || 0, localStats.current_streak || 0),
                 points: Math.max(item.points || 0, myPoints),
