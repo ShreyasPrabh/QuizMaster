@@ -1,11 +1,30 @@
-// Helper utility to get and update real user quiz progress and statistics
+// Helper utility to get and update real user quiz progress and statistics strictly per authenticated account
 
-const STATS_KEY = 'quizmaster_user_stats'
-const HISTORY_KEY = 'quizmaster_quiz_history'
-
-export function getUserStats() {
+function getCurrentUserId(explicitUserId) {
+  if (explicitUserId) return String(explicitUserId)
   try {
-    const saved = localStorage.getItem(STATS_KEY)
+    const userStr = localStorage.getItem('quiz-user')
+    if (userStr) {
+      const u = JSON.parse(userStr)
+      if (u?.id) return String(u.id)
+      if (u?.email) return String(u.email)
+    }
+  } catch {}
+  return 'guest'
+}
+
+function getStatsKey(userId) {
+  return `quizmaster_user_stats_${getCurrentUserId(userId)}`
+}
+
+function getHistoryKey(userId) {
+  return `quizmaster_quiz_history_${getCurrentUserId(userId)}`
+}
+
+export function getUserStats(userId) {
+  try {
+    const key = getStatsKey(userId)
+    const saved = localStorage.getItem(key)
     if (saved) return JSON.parse(saved)
   } catch {}
 
@@ -19,8 +38,8 @@ export function getUserStats() {
   }
 }
 
-export function recordQuizAttempt(topicName, moduleTitle, difficulty, totalQuestions, correctQuestions) {
-  const currentStats = getUserStats()
+export function recordQuizAttempt(topicName, moduleTitle, difficulty, totalQuestions, correctQuestions, userId) {
+  const currentStats = getUserStats(userId)
   const todayStr = new Date().toISOString().split('T')[0]
 
   const newTotalSolved = (currentStats.problems_solved || 0) + totalQuestions
@@ -34,7 +53,6 @@ export function recordQuizAttempt(topicName, moduleTitle, difficulty, totalQuest
   if (!currentStats.last_quiz_date) {
     streak = 1
   } else if (currentStats.last_quiz_date === todayStr) {
-    // Already did a quiz today, keep streak
     if (streak === 0) streak = 1
   } else {
     const lastDate = new Date(currentStats.last_quiz_date)
@@ -61,11 +79,13 @@ export function recordQuizAttempt(topicName, moduleTitle, difficulty, totalQuest
     last_quiz_date: todayStr,
   }
 
-  localStorage.setItem(STATS_KEY, JSON.stringify(updatedStats))
+  const statsKey = getStatsKey(userId)
+  localStorage.setItem(statsKey, JSON.stringify(updatedStats))
 
-  // Record history
+  // Record history per user
   try {
-    const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]')
+    const histKey = getHistoryKey(userId)
+    const history = JSON.parse(localStorage.getItem(histKey) || '[]')
     history.unshift({
       id: Date.now(),
       topic: topicName,
@@ -76,15 +96,16 @@ export function recordQuizAttempt(topicName, moduleTitle, difficulty, totalQuest
       date: new Date().toLocaleDateString(),
     })
     // Keep last 30
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, 30)))
+    localStorage.setItem(histKey, JSON.stringify(history.slice(0, 30)))
   } catch {}
 
   return updatedStats
 }
 
-export function getQuizHistory() {
+export function getQuizHistory(userId) {
   try {
-    return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]')
+    const key = getHistoryKey(userId)
+    return JSON.parse(localStorage.getItem(key) || '[]')
   } catch {
     return []
   }

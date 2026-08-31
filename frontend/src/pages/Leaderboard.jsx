@@ -21,7 +21,7 @@ export default function Leaderboard() {
     } catch {
       // ignore
     }
-    const localStats = getUserStats()
+    const localStats = getUserStats(user?.id)
     const myAvatar = user?.avatar || (user?.id && localStorage.getItem(`quizmaster-avatar-${user.id}`)) || '🧑‍🎓'
     const myRawName = user?.name || 'You'
     const myPoints = ((localStats.correct_solved || 0) * 10) + ((localStats.problems_solved || 0) * 2)
@@ -39,7 +39,7 @@ export default function Leaderboard() {
   })
 
   useEffect(() => {
-    const localStats = getUserStats()
+    const localStats = getUserStats(user?.id)
     const myAvatar = user?.avatar || (user?.id && localStorage.getItem(`quizmaster-avatar-${user.id}`)) || '🧑‍🎓'
     const myRawName = user?.name || 'You'
     const myPoints = ((localStats.correct_solved || 0) * 10) + ((localStats.problems_solved || 0) * 2)

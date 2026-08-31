@@ -52,14 +52,14 @@ export default function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
-  const [stats, setStats] = useState(() => getUserStats())
-  const [history, setHistory] = useState(() => getQuizHistory())
+  const [stats, setStats] = useState(() => getUserStats(user?.id))
+  const [history, setHistory] = useState(() => getQuizHistory(user?.id))
   const [preferredTopics, setPreferredTopics] = useState(() => getResolvedPreferredTopics())
 
   useEffect(() => {
     const handleSync = () => {
-      const currentLocal = getUserStats()
-      setHistory(getQuizHistory())
+      const currentLocal = getUserStats(user?.id)
+      setHistory(getQuizHistory(user?.id))
       setPreferredTopics(getResolvedPreferredTopics())
 
       if (user) {
@@ -67,9 +67,9 @@ export default function Dashboard() {
           .get('/user/stats/')
           .then((res) => {
             if (res.data) {
-              const local = getUserStats()
+              const local = getUserStats(user?.id)
               setStats({
-                current_streak: Math.max(res.data.current_streak || 0, local.current_streak || 0),
+                current_streak: res.data.current_streak ?? local.current_streak ?? 0,
                 problems_solved: Math.max(res.data.problems_solved || 0, local.problems_solved || 0),
                 accuracy: res.data.accuracy > 0 ? res.data.accuracy : (local.accuracy || 0),
                 max_streak: Math.max(res.data.max_streak || 0, local.max_streak || 0),
@@ -77,7 +77,7 @@ export default function Dashboard() {
             }
           })
           .catch(() => {
-            setStats(getUserStats())
+            setStats(getUserStats(user?.id))
           })
       } else {
         setStats(currentLocal)
