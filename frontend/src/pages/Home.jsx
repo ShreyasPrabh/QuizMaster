@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { Flame, Target, TrendingUp, Trophy, ArrowRight, BookOpen, CheckCircle, Sparkles } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 export default function Home() {
@@ -25,9 +25,8 @@ export default function Home() {
         <nav className="landing-nav-links">
           <a href="#home" className="active">Home</a>
           <a href="#features">Features</a>
-          <Link to="/topics">Topics</Link>
           <a href="#how-it-works">How It Works</a>
-          <a href="#pricing">Pricing</a>
+          {user && <Link to="/topics">Topics</Link>}
         </nav>
 
         <div className="landing-nav-actions">
@@ -63,9 +62,9 @@ export default function Home() {
             <Link to={user ? "/dashboard" : "/signup"} className="landing-btn-hero-primary">
               Get Started
             </Link>
-            <Link to="/topics" className="landing-btn-hero-secondary">
-              Explore Topics
-            </Link>
+            <a href="#how-it-works" className="landing-btn-hero-secondary">
+              How It Works
+            </a>
           </div>
         </div>
 
@@ -87,7 +86,6 @@ export default function Home() {
                 <span className="badge-title">Accuracy</span>
                 <span className="acc-val">85%</span>
               </div>
-              {/* Mini SVG Trend Line */}
               <svg width="100" height="28" viewBox="0 0 100 28" fill="none">
                 <path
                   d="M2 22L20 18L38 24L56 12L74 16L98 4"
@@ -114,13 +112,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* QUICK FEATURES STRIP */}
+      {/* FEATURES STRIP */}
       <section className="landing-features-strip" id="features">
         <div className="feature-strip-item">
           <div className="feature-icon bg-indigo">🎯</div>
           <div>
             <h3>Curated Challenges</h3>
-            <p>From beginner fundamentals to advanced programming & math.</p>
+            <p>From beginner fundamentals to advanced programming &amp; math.</p>
           </div>
         </div>
         <div className="feature-strip-item">
@@ -137,7 +135,68 @@ export default function Home() {
             <p>Monitor your accuracy, streak milestones, and category mastery.</p>
           </div>
         </div>
+        <div className="feature-strip-item">
+          <div className="feature-icon bg-purple">🏆</div>
+          <div>
+            <h3>Leaderboards</h3>
+            <p>Compete with peers and climb global topic rankings.</p>
+          </div>
+        </div>
       </section>
+
+      {/* HOW IT WORKS */}
+      <section className="landing-how-section" id="how-it-works">
+        <div className="landing-section-header">
+          <h2>How It Works</h2>
+          <p>Get started in three simple steps</p>
+        </div>
+        <div className="landing-steps-grid">
+          <div className="landing-step-card">
+            <div className="step-number">1</div>
+            <div className="step-icon">📝</div>
+            <h3>Create an Account</h3>
+            <p>Sign up for free in seconds. Choose your preferred topics and set your learning goals.</p>
+          </div>
+          <div className="landing-step-card">
+            <div className="step-number">2</div>
+            <div className="step-icon">🎯</div>
+            <h3>Pick a Topic & Module</h3>
+            <p>Browse 60+ subtopics across 6 domains. Select a difficulty — Easy, Medium, or Hard.</p>
+          </div>
+          <div className="landing-step-card">
+            <div className="step-number">3</div>
+            <div className="step-icon">📈</div>
+            <h3>Practice & Track Progress</h3>
+            <p>Answer 20 MCQs per module, get instant results, and watch your accuracy climb daily.</p>
+          </div>
+        </div>
+      </section>
+
+
+      {/* FOOTER CTA */}
+      <section className="landing-footer-cta">
+        <h2>Ready to become a QuizMaster?</h2>
+        <p>Join thousands of learners improving their skills every day.</p>
+        <Link to={user ? "/dashboard" : "/signup"} className="landing-btn-hero-primary">
+          {user ? 'Go to Dashboard' : 'Sign up for Free'} <ArrowRight size={18} />
+        </Link>
+      </section>
+
+      {/* FOOTER */}
+      <footer className="landing-footer">
+        <div className="landing-footer-brand">
+          <span>⬡ QuizMaster</span>
+          <span className="landing-footer-tagline">Learn. Quiz. Improve. Repeat.</span>
+        </div>
+        <div className="landing-footer-links">
+          <a href="#home">Home</a>
+          <a href="#features">Features</a>
+          <a href="#how-it-works">How It Works</a>
+          <Link to="/login">Login</Link>
+          <Link to="/signup">Sign Up</Link>
+        </div>
+        <p className="landing-footer-copy">© 2026 QuizMaster. All rights reserved.</p>
+      </footer>
     </div>
   )
 }

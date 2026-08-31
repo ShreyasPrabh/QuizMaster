@@ -11,6 +11,7 @@ import Leaderboard from './pages/Leaderboard'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
 import AppLayout from './components/AppLayout'
+import ProtectedRoute from './components/ProtectedRoute'
 import './App.css'
 
 function App() {
@@ -21,19 +22,25 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
 
-      {/* App Shell with Sidebar & Header */}
-      <Route element={<AppLayout />}>
+      {/* Protected App Shell — requires login */}
+      <Route
+        element={
+          <ProtectedRoute>
+            <AppLayout />
+          </ProtectedRoute>
+        }
+      >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/topics" element={<Topics />} />
         <Route path="/topics/:categorySlug" element={<Topics />} />
         <Route path="/topic/:topicId" element={<TopicDetail />} />
-        
-        {/* Dedicated Quiz Routes for Reliable Routing */}
+
+        {/* Quiz Routes */}
         <Route path="/quiz" element={<Quiz />} />
         <Route path="/quiz/:topicId" element={<Quiz />} />
         <Route path="/quiz/:topicId/:moduleId" element={<Quiz />} />
         <Route path="/quiz/:topicId/:moduleId/:difficulty" element={<Quiz />} />
-        
+
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/profile" element={<Profile />} />

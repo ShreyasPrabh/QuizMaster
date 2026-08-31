@@ -3716,3 +3716,147 @@ input:checked + .qm-slider:before {
     grid-template-columns: repeat(4, 1fr);
   }
 }
+
+/* ==========================================================================
+   LANDING: FEATURES STRIP
+   ========================================================================== */
+.landing-features-strip {
+  background: #f8faff;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 2.5rem 3.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+}
+.feature-strip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+.feature-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.feature-icon.bg-indigo  { background: #eef2ff; }
+.feature-icon.bg-amber   { background: #fffbeb; }
+.feature-icon.bg-emerald { background: #ecfdf5; }
+.feature-icon.bg-purple  { background: #f5f3ff; }
+.feature-strip-item h3 { font-size: 0.95rem; font-weight: 700; color: #0f172a; margin-bottom: 0.25rem; }
+.feature-strip-item p  { font-size: 0.82rem; color: #64748b; line-height: 1.5; }
+
+/* ==========================================================================
+   LANDING: SHARED SECTION HEADER
+   ========================================================================== */
+.landing-section-header { text-align: center; margin-bottom: 3rem; }
+.landing-section-header h2 { font-size: 2.2rem; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+.landing-section-header p  { font-size: 1rem; color: #64748b; }
+
+/* ==========================================================================
+   LANDING: HOW IT WORKS
+   ========================================================================== */
+.landing-how-section {
+  padding: 5rem 3.5rem;
+  background: #ffffff;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.landing-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+}
+.landing-step-card {
+  background: #f8faff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 2rem 1.75rem;
+  position: relative;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.landing-step-card:hover { box-shadow: 0 8px 32px rgba(99,102,241,0.12); transform: translateY(-4px); }
+.step-number {
+  position: absolute; top: 1.25rem; right: 1.25rem;
+  width: 30px; height: 30px;
+  background: #6366f1; color: white;
+  border-radius: 50%; font-size: 0.8rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.step-icon { font-size: 2.4rem; margin-bottom: 1rem; }
+.landing-step-card h3 { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 0.6rem; }
+.landing-step-card p  { font-size: 0.875rem; color: #64748b; line-height: 1.65; }
+
+/* ==========================================================================
+   LANDING: FOOTER CTA BANNER
+   ========================================================================== */
+.landing-footer-cta {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  padding: 5rem 3.5rem;
+  text-align: center;
+}
+.landing-footer-cta h2 { font-size: 2.2rem; font-weight: 800; color: #ffffff; margin-bottom: 0.75rem; letter-spacing: -0.02em; }
+.landing-footer-cta p  { font-size: 1.05rem; color: rgba(255,255,255,0.8); margin-bottom: 2rem; }
+.landing-footer-cta .landing-btn-hero-primary {
+  background: #ffffff; color: #4f46e5;
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  padding: 0.85rem 2rem; border-radius: 12px; font-weight: 700; font-size: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.landing-footer-cta .landing-btn-hero-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+
+/* ==========================================================================
+   LANDING: FOOTER
+   ========================================================================== */
+.landing-footer {
+  background: #0f172a;
+  padding: 2.5rem 3.5rem;
+  display: flex; flex-direction: column; align-items: center; gap: 1.5rem; text-align: center;
+}
+.landing-footer-brand { display: flex; flex-direction: column; align-items: center; gap: 0.35rem; }
+.landing-footer-brand span:first-child { font-size: 1.2rem; font-weight: 800; color: #ffffff; }
+.landing-footer-tagline { font-size: 0.82rem; color: #64748b; }
+.landing-footer-links { display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center; }
+.landing-footer-links a { font-size: 0.875rem; color: #94a3b8; transition: color 0.15s; }
+.landing-footer-links a:hover { color: #6366f1; }
+.landing-footer-copy { font-size: 0.8rem; color: #475569; }
+
+/* ==========================================================================
+   LANDING: HERO BUTTONS
+   ========================================================================== */
+.landing-hero-btns { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 2rem; }
+.landing-btn-hero-primary {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: #6366f1; color: #ffffff;
+  padding: 0.85rem 1.75rem; border-radius: 12px; font-weight: 700; font-size: 1rem;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.landing-btn-hero-primary:hover { background: #4f46e5; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(99,102,241,0.4); }
+.landing-btn-hero-secondary {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  background: transparent; color: #0f172a;
+  border: 2px solid #e2e8f0; padding: 0.85rem 1.75rem; border-radius: 12px; font-weight: 600; font-size: 1rem;
+  transition: border-color 0.2s, color 0.2s;
+}
+.landing-btn-hero-secondary:hover { border-color: #6366f1; color: #6366f1; }
+
+/* RESPONSIVE */
+@media (max-width: 1024px) {
+  .landing-features-strip { grid-template-columns: repeat(2, 1fr); padding: 2rem; }
+  .landing-steps-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .landing-features-strip { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+  .landing-steps-grid { grid-template-columns: 1fr; }
+  .landing-how-section { padding: 3rem 1.5rem; }
+  .landing-footer-cta { padding: 3rem 1.5rem; }
+  .landing-footer-cta h2 { font-size: 1.6rem; }
+  .landing-footer { padding: 2rem 1.5rem; }
+  .landing-footer-links { gap: 1rem; }
+  .landing-section-header h2 { font-size: 1.6rem; }
+}
