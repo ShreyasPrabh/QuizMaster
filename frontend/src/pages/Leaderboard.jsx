@@ -6,13 +6,37 @@ import { getUserStats } from '../lib/userStats'
 import api from '../lib/api'
 
 const PAGE_SIZE = 20
+const LEADERBOARD_CACHE_KEY = 'qm_leaderboard_cache'
 
 export default function Leaderboard() {
   const { user } = useAuth()
   const [filter, setFilter] = useState('All Time')
-  const [leaders, setLeaders] = useState([])
   const [currentPage, setCurrentPage] = useState(1)
-  const [loading, setLoading] = useState(true)
+
+  // Instant zero-delay load from cache or local statistics
+  const [leaders, setLeaders] = useState(() => {
+    try {
+      const cached = localStorage.getItem(LEADERBOARD_CACHE_KEY)
+      if (cached) return JSON.parse(cached)
+    } catch {
+      // ignore
+    }
+    const localStats = getUserStats()
+    const savedAvatar = localStorage.getItem('quizmaster-avatar') || '🧑‍🎓'
+    const myRawName = user?.name || 'You'
+    const myPoints = ((localStats.correct_solved || 0) * 10) + ((localStats.problems_solved || 0) * 2)
+    return [
+      {
+        rank: 1,
+        name: myRawName,
+        avatar: savedAvatar,
+        streak: localStats.current_streak || 0,
+        points: myPoints,
+        medal: '🥇',
+        isCurrentUser: true,
+      },
+    ]
+  })
 
   useEffect(() => {
     const localStats = getUserStats()
@@ -67,35 +91,15 @@ export default function Leaderboard() {
           }))
 
           setLeaders(list)
-        } else {
-          setLeaders([
-            {
-              rank: 1,
-              name: myRawName,
-              avatar: savedAvatar,
-              streak: localStats.current_streak || 0,
-              points: myPoints,
-              medal: '🥇',
-              isCurrentUser: true,
-            },
-          ])
+          try {
+            localStorage.setItem(LEADERBOARD_CACHE_KEY, JSON.stringify(list))
+          } catch {
+            // ignore
+          }
         }
       })
       .catch(() => {
-        setLeaders([
-          {
-            rank: 1,
-            name: myRawName,
-            avatar: savedAvatar,
-            streak: localStats.current_streak || 0,
-            points: myPoints,
-            medal: '🥇',
-            isCurrentUser: true,
-          },
-        ])
-      })
-      .finally(() => {
-        setLoading(false)
+        // Keep current state
       })
   }, [user])
 

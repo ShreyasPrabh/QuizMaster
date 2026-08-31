@@ -274,7 +274,6 @@ def leaderboard_view(request):
     medals = ['🥇', '🥈', '🥉']
     for idx, p in enumerate(profiles):
         is_me = (request.user.is_authenticated and request.user.id == p.user.id)
-        # Ensure avatar is an emoji, not a dicebear text like 'micah'
         avatar_clean = p.avatar if (p.avatar and len(p.avatar) <= 2) else '🧑‍🎓'
         user_name = p.user.get_full_name() or p.user.username
         
@@ -287,4 +286,8 @@ def leaderboard_view(request):
             'medal': medals[idx] if idx < 3 else None,
             'isCurrentUser': is_me
         })
-    return Response({'leaderboard': leaders})
+
+    response = Response({'leaderboard': leaders})
+    # Fast Edge Caching: Cache for 30s so leaderboard loads in milliseconds
+    response['Cache-Control'] = 'public, max-age=15, s-maxage=30, stale-while-revalidate=60'
+    return response
