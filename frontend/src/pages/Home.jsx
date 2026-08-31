@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, Zap, Trophy, BarChart2 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 
 export default function Home() {
@@ -25,6 +25,7 @@ export default function Home() {
         <nav className="landing-nav-links">
           <a href="#home" className="active">Home</a>
           <a href="#features">Features</a>
+          <a href="#how-it-works">How It Works</a>
           <Link to="/about">About</Link>
           <Link to="/faq">FAQ</Link>
           <Link to="/contact">Contact</Link>
@@ -156,33 +157,11 @@ export default function Home() {
             <h3>Pick a Topic & Module</h3>
             <p>Browse 60+ subtopics across 6 domains. Select a difficulty — Easy, Medium, or Hard.</p>
           </div>
-          <h2>Why Thousands of Learners Choose QuizClub</h2>
-          <p>Engineered for deep comprehension and daily active recall.</p>
-        </div>
-
-        <div className="landing-features-grid">
-          <div className="landing-feature-card">
-            <div className="feature-icon-wrapper indigo">
-              <Zap size={24} />
-            </div>
-            <h3>Structured Curriculum</h3>
-            <p>From Java and Python to Calculus and Physics, progression is step-by-step.</p>
-          </div>
-
-          <div className="landing-feature-card">
-            <div className="feature-icon-wrapper emerald">
-              <Trophy size={24} />
-            </div>
-            <h3>Gamified Competition</h3>
-            <p>Climb global leaderboards, earn points, and keep practice streaks alive daily.</p>
-          </div>
-
-          <div className="landing-feature-card">
-            <div className="feature-icon-wrapper amber">
-              <BarChart2 size={24} />
-            </div>
-            <h3>Deep Analytics</h3>
-            <p>Identify weak subject areas and monitor accuracy trends over time.</p>
+          <div className="landing-step-card">
+            <div className="step-number">3</div>
+            <div className="step-icon">📈</div>
+            <h3>Practice & Track Progress</h3>
+            <p>Answer 20 MCQs per module, get instant results, and watch your accuracy climb daily.</p>
           </div>
         </div>
       </section>
