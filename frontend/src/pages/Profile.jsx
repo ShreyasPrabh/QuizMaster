@@ -195,12 +195,19 @@ export default function Profile() {
             </div>
 
             <div className="qm-field-box">
-              <label>Email</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label>Email Address</label>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                  🔒 Fixed
+                </span>
+              </div>
               <input
                 type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                value={user?.email || email}
+                disabled
+                readOnly
+                title="Email cannot be changed after account creation"
+                style={{ opacity: 0.75, cursor: 'not-allowed', backgroundColor: 'var(--bg-app)' }}
               />
             </div>
 

@@ -263,10 +263,6 @@ def profile_update(request):
         user.last_name = parts[1] if len(parts) > 1 else ''
         user.save(update_fields=['first_name', 'last_name'])
 
-    if 'email' in data and data['email']:
-        user.email = data['email'].strip()
-        user.save(update_fields=['email'])
-
     if 'avatar' in data:
         profile.avatar = data['avatar']
     if 'bio' in data:
