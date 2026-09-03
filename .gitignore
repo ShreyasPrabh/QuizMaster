@@ -1,33 +1,29 @@
 # Dependencies
 node_modules/
 frontend/node_modules/
-backend/venv/
-venv/
-.venv/
-env/
+frontend/dist/
+frontend/dist-ssr/
 
-# Python & Django
+# Python / Django
 __pycache__/
 *.py[cod]
 *$py.class
 *.sqlite3
-backend/db.sqlite3
-backend/*.sqlite3
-
-# Environment variables
+db.sqlite3
 .env
-backend/.env
-frontend/.env
-*.env.local
+venv/
+env/
+.venv/
 
-# Build artifacts
-frontend/dist/
-dist/
-build/
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-# IDE & OS files
+# IDE & OS
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
-*.log

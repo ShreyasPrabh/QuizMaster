@@ -1,72 +1,147 @@
+import React, { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { BookOpen, BarChart3, LayoutDashboard, User, LogOut, Sparkles } from 'lucide-react'
-
-const navItems = [
-  { to: '/', label: 'Home', icon: Sparkles },
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/topics', label: 'Topics', icon: BookOpen },
-  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { to: '/profile', label: 'Profile', icon: User },
-]
+import { LogIn, UserPlus, LogOut, LayoutDashboard, Menu, X } from 'lucide-react'
+import RetroToolbar from './RetroToolbar'
+import soundFx from '../lib/soundFx'
 
 export default function Navbar() {
   const { user, signOut } = useAuth()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const navigate = useNavigate()
 
   const handleLogout = () => {
+    soundFx.playSelect()
     signOut()
-    navigate('/login')
+    setMobileMenuOpen(false)
+    navigate('/')
+  }
+
+  const toggleMobileMenu = () => {
+    soundFx.playSelect()
+    setMobileMenuOpen((prev) => !prev)
   }
 
   return (
-    <nav className="navbar">
-      <Link to="/" className="brand-wrap">
-        <div className="brand-logo-badge">🎯</div>
-        <div className="brand">QuizFlow</div>
-      </Link>
+    <header className="landing-navbar">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button
+          className="mobile-nav-toggle"
+          onClick={toggleMobileMenu}
+          aria-label="Toggle Navigation Menu"
+        >
+          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+        </button>
 
-      <div className="nav-links">
-        {navItems.map((item) => {
-          const Icon = item.icon
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-            >
-              <Icon size={16} />
-              <span>{item.label}</span>
-            </NavLink>
-          )
-        })}
+        <Link to="/" className="landing-nav-brand" onClick={() => setMobileMenuOpen(false)}>
+          <div className="arcade-logo-box" style={{ padding: '2px' }}>
+            <img src="/logo.svg" alt="QuizClub Logo" style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+          </div>
+          <div className="landing-brand-name">
+            <span>QuizClub</span>
+            <span className="arcade-tag-chip">ARCADE</span>
+          </div>
+        </Link>
       </div>
 
-      <div className="nav-actions">
+      {/* DESKTOP NAV LINKS */}
+      <nav className="landing-nav-links">
+        <NavLink to="/" end>Home</NavLink>
+        <NavLink to="/about">About</NavLink>
+        <NavLink to="/faq">FAQ</NavLink>
+        <NavLink to="/contact">Contact</NavLink>
+      </nav>
+
+      {/* ACTIONS & TOOLBAR */}
+      <div className="retro-nav-actions">
+        <RetroToolbar showCoins={Boolean(user)} />
+
         {user ? (
-          <div className="user-nav-badge">
-            <Link to="/profile" className="user-info-pill">
-              <span className="user-avatar-sm">
-                {(user.name || user.email || 'U')[0].toUpperCase()}
-              </span>
-              <span className="user-name-text">{user.name || user.email?.split('@')[0]}</span>
+          <div className="desktop-nav-auth" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Link to="/dashboard" className="btn-retro-yellow" style={{ padding: '8px 14px', fontSize: '10px' }}>
+              <LayoutDashboard size={14} />
+              <span>DASHBOARD</span>
             </Link>
-            <button onClick={handleLogout} className="logout-btn" title="Sign out">
-              <LogOut size={16} />
-              <span>Logout</span>
+            <button onClick={handleLogout} className="retro-tool-btn" title="Exit Arcade">
+              <LogOut size={14} />
             </button>
           </div>
         ) : (
-          <div className="auth-nav-buttons">
-            <NavLink to="/login" className="secondary-btn">
-              Login
-            </NavLink>
-            <NavLink to="/signup" className="primary-btn">
-              Sign Up
-            </NavLink>
+          <div className="desktop-nav-auth" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Link to="/login" className="btn-retro-primary" style={{ padding: '8px 14px', fontSize: '10px' }}>
+              <LogIn size={13} />
+              <span>LOGIN</span>
+            </Link>
+            <Link to="/signup" className="btn-retro-secondary" style={{ padding: '8px 14px', fontSize: '10px' }}>
+              <UserPlus size={13} />
+              <span>SIGN UP</span>
+            </Link>
           </div>
         )}
       </div>
-    </nav>
+
+      {/* MOBILE EXPANDED MENU DRAWER */}
+      {mobileMenuOpen && (
+        <div className="mobile-nav-drawer">
+          <NavLink to="/" end onClick={() => setMobileMenuOpen(false)} className="mobile-nav-item">
+            🕹️ Home
+          </NavLink>
+          <NavLink to="/about" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-item">
+            👾 About
+          </NavLink>
+          <NavLink to="/faq" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-item">
+            ❓ FAQ
+          </NavLink>
+          <NavLink to="/contact" onClick={() => setMobileMenuOpen(false)} className="mobile-nav-item">
+            📡 Contact
+          </NavLink>
+
+          <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '2px solid #222', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {user ? (
+              <>
+                <Link
+                  to="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="btn-retro-yellow"
+                  style={{ justifyContent: 'center', width: '100%' }}
+                >
+                  <LayoutDashboard size={14} />
+                  <span>DASHBOARD</span>
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="retro-tool-btn"
+                  style={{ justifyContent: 'center', width: '100%' }}
+                >
+                  <LogOut size={14} />
+                  <span>LOG OUT</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="btn-retro-primary"
+                  style={{ justifyContent: 'center', width: '100%' }}
+                >
+                  <LogIn size={14} />
+                  <span>LOGIN</span>
+                </Link>
+                <Link
+                  to="/signup"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="btn-retro-secondary"
+                  style={{ justifyContent: 'center', width: '100%' }}
+                >
+                  <UserPlus size={14} />
+                  <span>SIGN UP</span>
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </header>
   )
 }

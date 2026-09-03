@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Outlet, NavLink, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, useLocation, useSearchParams, Link } from 'react-router-dom'
 import {
   LayoutDashboard,
   Layers,
@@ -11,229 +11,282 @@ import {
   LogOut,
   Search,
   Bell,
-  ChevronDown,
   CheckCircle2,
-  Sparkles,
   Zap,
-  Check
+  Flame,
+  Menu,
+  X
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import RetroToolbar from './RetroToolbar'
+import RetroMarquee from './RetroMarquee'
+import soundFx from '../lib/soundFx'
+import { getUserStats } from '../lib/userStats'
 
 const navLinks = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/topics', label: 'Topics', icon: Layers },
-  { to: '/quiz', label: 'Quiz', icon: HelpCircle },
-  { to: '/analytics', label: 'Analytics', icon: BarChart2 },
-  { to: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-  { to: '/profile', label: 'Profile', icon: User },
+  { to: '/topics', label: 'Cartridges', icon: Layers },
+  { to: '/quiz', label: 'Arcade Quiz', icon: HelpCircle },
+  { to: '/leaderboard', label: 'High Scores', icon: Trophy },
+  { to: '/analytics', label: 'Telemetry', icon: BarChart2 },
+  { to: '/profile', label: 'Player ID', icon: User },
   { to: '/settings', label: 'Settings', icon: Settings },
-]
-
-const INITIAL_NOTIFICATIONS = [
-  {
-    id: 1,
-    icon: '🔥',
-    title: 'Streak Active!',
-    desc: 'Complete your daily module to extend your learning streak.',
-    time: '10m ago',
-  },
-  {
-    id: 2,
-    icon: '☕',
-    title: 'Java Module 1 Ready',
-    desc: '20 new practice questions ready in Java Basics & Syntax.',
-    time: '1h ago',
-  },
-  {
-    id: 3,
-    icon: '🎯',
-    title: 'Accuracy Milestone',
-    desc: 'Your quiz results are being tracked in real time.',
-    time: '2h ago',
-  },
 ]
 
 export default function AppLayout() {
   const { user, signOut } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  const [showNotifications, setShowNotifications] = useState(false)
-  const [notificationsList, setNotificationsList] = useState(() => {
-    const isCleared = localStorage.getItem('quizmaster_notifs_cleared') === 'true'
-    return isCleared ? [] : INITIAL_NOTIFICATIONS
-  })
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [stats, setStats] = useState(() => getUserStats(user?.id))
+  const [notifsOpen, setNotifsOpen] = useState(false)
+  const [currentSearch, setCurrentSearch] = useState(searchParams.get('q') || '')
 
-  const unreadCount = notificationsList.length
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    setMobileSidebarOpen(false)
+  }, [location.pathname])
 
-  const isQuiz = location.pathname.startsWith('/quiz/') && location.pathname !== '/quiz'
-  const hideSearchBar = ['/profile', '/analytics', '/settings'].some((path) =>
-    location.pathname.startsWith(path)
-  )
+  // Sync stats on quiz updates
+  useEffect(() => {
+    const handleStatsUpdate = () => {
+      setStats(getUserStats(user?.id))
+    }
+    window.addEventListener('quizmaster-stats-updated', handleStatsUpdate)
+    return () => window.removeEventListener('quizmaster-stats-updated', handleStatsUpdate)
+  }, [user?.id])
 
   const handleLogout = () => {
+    soundFx.playSelect()
     signOut()
-    navigate('/login')
+    navigate('/')
   }
 
-  const handleMarkAllRead = () => {
-    setNotificationsList([])
+  const handleSearchSubmit = (e) => {
+    e.preventDefault()
+    if (currentSearch.trim()) {
+      soundFx.playSelect()
+      navigate(`/topics?q=${encodeURIComponent(currentSearch.trim())}`)
+    }
+  }
+
+  const notifications = [
+    { id: 1, title: 'Cabinet Online 🕹️', msg: 'Welcome to QuizClub Arcade v2.0!', time: 'Now' },
+    { id: 2, title: 'High Scores Active 🏆', msg: 'Compete across 60+ cartridges to reach S-Rank.', time: '1m ago' },
+    { id: 3, title: 'Combo Streak Power 🔥', msg: 'Chain correct answers to unlock 3x score multipliers.', time: '10m ago' },
+  ]
+
+  const unreadNotifs = !localStorage.getItem('quizmaster_notifs_cleared')
+
+  const handleClearNotifs = () => {
+    soundFx.playSelect()
     localStorage.setItem('quizmaster_notifs_cleared', 'true')
   }
 
-  const avatar = user?.avatar || (user?.id && localStorage.getItem(`quizmaster-avatar-${user.id}`)) || '🧑‍🎓'
-  const displayName = user?.name || 'Learner'
-
-  const [searchParams, setSearchParams] = useSearchParams()
-  const currentSearch = searchParams.get('q') || ''
-
-  const handleSearchChange = (e) => {
-    const val = e.target.value
-    const newParams = new URLSearchParams(location.search)
-    if (val.trim()) {
-      newParams.set('q', val)
-    } else {
-      newParams.delete('q')
-    }
-    const searchString = newParams.toString()
-    navigate(`${location.pathname}${searchString ? `?${searchString}` : ''}`, { replace: true })
-  }
+  const avatar = user?.avatar || (user?.id && localStorage.getItem(`quizmaster-avatar-${user.id}`)) || '👾'
+  const displayName = user?.name || 'Player 1'
 
   return (
-    <div className="qm-app-container">
-      {/* LEFT SIDEBAR */}
-      <aside className="qm-sidebar">
-        <div className="qm-sidebar-brand" onClick={() => navigate('/dashboard')}>
-          <div className="qm-brand-logo">
-            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <rect width="28" height="28" rx="8" fill="#6366F1" />
-              <path d="M7 14L14 7L21 14L14 21L7 14Z" fill="white" fillOpacity="0.8" />
-              <path d="M14 7V21" stroke="#6366F1" strokeWidth="2" />
-              <path d="M7 14H21" stroke="#6366F1" strokeWidth="2" />
-            </svg>
-          </div>
-          <span className="qm-brand-name">QuizClub</span>
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {/* RETRO TICKER AT THE VERY TOP */}
+      <RetroMarquee />
 
-        <nav className="qm-sidebar-nav">
-          {navLinks.map((item) => {
-            const Icon = item.icon
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `qm-nav-item ${isActive ? 'active' : ''}`
-                }
+      <div className="app-shell-root">
+        {/* MOBILE BACKDROP */}
+        {mobileSidebarOpen && (
+          <div
+            className="retro-sidebar-backdrop"
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+        )}
+
+        {/* RETRO SIDEBAR */}
+        <aside className={`retro-sidebar ${mobileSidebarOpen ? 'open' : ''}`}>
+          <div className="sidebar-logo-area">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+              <Link to="/dashboard" style={{ textDecoration: 'none' }} onClick={() => setMobileSidebarOpen(false)}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div className="arcade-logo-box" style={{ width: '38px', height: '38px', padding: '3px' }}>
+                    <img src="/logo.svg" alt="QuizClub Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  </div>
+                  <div>
+                    <div className="landing-brand-name" style={{ fontSize: '20px' }}>QuizClub</div>
+                    <span className="arcade-tag-chip">ARCADE</span>
+                  </div>
+                </div>
+              </Link>
+
+              <button
+                className="mobile-sidebar-close-btn"
+                onClick={() => setMobileSidebarOpen(false)}
+                aria-label="Close sidebar"
               >
-                <Icon size={19} className="qm-nav-icon" />
-                <span>{item.label}</span>
-              </NavLink>
-            )
-          })}
-        </nav>
+                <X size={18} />
+              </button>
+            </div>
+          </div>
 
-        <div className="qm-sidebar-footer">
-          {user ? (
-            <button className="qm-logout-btn" onClick={handleLogout}>
-              <LogOut size={18} />
-              <span>Log out</span>
-            </button>
-          ) : (
-            <button className="qm-logout-btn" onClick={() => navigate('/login')}>
-              <LogOut size={18} />
-              <span>Sign in</span>
-            </button>
-          )}
-        </div>
-      </aside>
-
-      {/* MAIN CONTENT WRAPPER */}
-      <div className="qm-main-wrapper">
-        {/* TOP HEADER */}
-        {!isQuiz && (
-          <header className="qm-top-header">
-            {!hideSearchBar ? (
-              <div className="qm-search-box">
-                <Search size={17} className="qm-search-icon" />
-                <input
-                  type="text"
-                  placeholder="Search modules, topics, quizzes..."
-                  className="qm-search-input"
-                  value={currentSearch}
-                  onChange={handleSearchChange}
-                />
-              </div>
-            ) : (
-              <div className="qm-header-spacer" />
-            )}
-
-            <div className="qm-header-actions">
-              {/* NOTIFICATION BUTTON & DROPDOWN */}
-              <div className="relative">
-                <button
-                  className="qm-bell-btn"
-                  title="Notifications"
-                  onClick={() => setShowNotifications(!showNotifications)}
+          <nav className="sidebar-nav-list">
+            {navLinks.map((item) => {
+              const Icon = item.icon
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    isActive ? 'sidebar-nav-item active' : 'sidebar-nav-item'
+                  }
+                  onClick={() => {
+                    soundFx.playSelect()
+                    setMobileSidebarOpen(false)
+                  }}
                 >
-                  <Bell size={19} />
-                  {unreadCount > 0 && <span className="qm-bell-badge" />}
+                  <Icon className="sidebar-nav-icon" />
+                  <span>{item.label}</span>
+                </NavLink>
+              )
+            })}
+          </nav>
+
+          {/* PLAYER STATUS CARD */}
+          <div className="sidebar-player-card">
+            <div className="player-avatar-box">{avatar}</div>
+            <div style={{ overflow: 'hidden', flex: 1 }}>
+              <div className="player-name-text" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {displayName}
+              </div>
+              <div className="player-level-chip">
+                LVL {stats.level} • {stats.current_streak}🔥
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="retro-tool-btn"
+              style={{ padding: '6px', borderRadius: '4px' }}
+              title="Exit / Logout"
+            >
+              <LogOut size={13} />
+            </button>
+          </div>
+        </aside>
+
+        {/* MAIN APP AREA */}
+        <div className="app-main-area">
+          {/* TOPBAR */}
+          <header className="app-topbar">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                className="mobile-sidebar-toggle"
+                onClick={() => setMobileSidebarOpen(true)}
+                aria-label="Open sidebar menu"
+              >
+                <Menu size={18} />
+              </button>
+
+              {/* Search */}
+              <form onSubmit={handleSearchSubmit} className="retro-search-form">
+                <div className="retro-search-input-wrap">
+                  <Search size={15} color="var(--neon-cyan)" />
+                  <input
+                    type="text"
+                    placeholder="Search 60+ topics..."
+                    value={currentSearch}
+                    onChange={(e) => setCurrentSearch(e.target.value)}
+                    className="retro-search-field"
+                  />
+                </div>
+              </form>
+            </div>
+
+            {/* Right Tools & Notifs */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <RetroToolbar showCoins={true} />
+
+              <div style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  className="retro-tool-btn"
+                  onClick={() => {
+                    soundFx.playSelect()
+                    setNotifsOpen(!notifsOpen)
+                  }}
+                  title="Arcade Transmissions"
+                >
+                  <Bell size={14} />
+                  {unreadNotifs && <span className="retro-notif-dot" />}
                 </button>
 
-                {showNotifications && (
-                  <div className="qm-notifications-dropdown">
-                    <div className="qm-notif-header">
-                      <h3>Notifications</h3>
-                      {notificationsList.length > 0 ? (
-                        <button
-                          className="qm-notif-mark-read"
-                          onClick={handleMarkAllRead}
-                        >
-                          Mark all as read
-                        </button>
-                      ) : (
-                        <span className="text-xs text-slate-400">All cleared</span>
-                      )}
+                {/* Notifications Drawer */}
+                {notifsOpen && (
+                  <div className="retro-notifs-dropdown">
+                    <div className="notifs-header">
+                      <span>ARCADE DISPATCH</span>
+                      <button
+                        onClick={handleClearNotifs}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--neon-cyan)',
+                          cursor: 'pointer',
+                          fontFamily: 'var(--font-pixel)',
+                          fontSize: '8px',
+                        }}
+                      >
+                        CLEAR ALL
+                      </button>
                     </div>
-
-                    <div className="qm-notif-list">
-                      {notificationsList.length > 0 ? (
-                        notificationsList.map((n) => (
-                          <div key={n.id} className="qm-notif-item">
-                            <span className="qm-notif-icon">{n.icon}</span>
-                            <div className="qm-notif-body">
-                              <h4>{n.title}</h4>
-                              <p>{n.desc}</p>
-                              <span className="qm-notif-time">{n.time}</span>
-                            </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {notifications.map((n) => (
+                        <div key={n.id} className="notif-item">
+                          <div style={{ fontWeight: 'bold', color: 'var(--neon-yellow)', fontSize: '12px' }}>
+                            {n.title}
                           </div>
-                        ))
-                      ) : (
-                        <div className="py-6 text-center text-slate-400 text-xs flex flex-col items-center gap-1.5">
-                          <CheckCircle2 size={20} className="text-emerald" />
-                          <span>No notifications. You're all caught up!</span>
+                          <div style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px' }}>
+                            {n.msg}
+                          </div>
+                          <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                            {n.time}
+                          </div>
                         </div>
-                      )}
+                      ))}
                     </div>
                   </div>
                 )}
               </div>
-
-              <div className="qm-user-profile-btn" onClick={() => navigate('/profile')}>
-                <div className="qm-user-avatar">
-                  <span>{avatar}</span>
-                </div>
-                <span className="qm-user-name">{displayName}</span>
-                <ChevronDown size={15} className="qm-chevron-icon" />
-              </div>
             </div>
           </header>
-        )}
 
-        {/* OUTLET */}
-        <main className="qm-content-area">
-          <Outlet />
-        </main>
+          {/* PAGE CONTENT */}
+          <main className="app-content-body">
+            <Outlet />
+          </main>
+
+          {/* MOBILE BOTTOM NAVIGATION BAR */}
+          <nav className="mobile-bottom-bar">
+            <NavLink to="/dashboard" className={({ isActive }) => `mobile-bottom-item ${isActive ? 'active' : ''}`}>
+              <LayoutDashboard size={18} />
+              <span>Dash</span>
+            </NavLink>
+            <NavLink to="/topics" className={({ isActive }) => `mobile-bottom-item ${isActive ? 'active' : ''}`}>
+              <Layers size={18} />
+              <span>Topics</span>
+            </NavLink>
+            <NavLink to="/quiz" className={({ isActive }) => `mobile-bottom-item ${isActive ? 'active' : ''}`}>
+              <HelpCircle size={18} />
+              <span>Quiz</span>
+            </NavLink>
+            <NavLink to="/leaderboard" className={({ isActive }) => `mobile-bottom-item ${isActive ? 'active' : ''}`}>
+              <Trophy size={18} />
+              <span>Ranks</span>
+            </NavLink>
+            <NavLink to="/profile" className={({ isActive }) => `mobile-bottom-item ${isActive ? 'active' : ''}`}>
+              <User size={18} />
+              <span>Profile</span>
+            </NavLink>
+          </nav>
+        </div>
       </div>
     </div>
   )

@@ -1,339 +1,224 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { CheckCircle2, ChevronDown, Save, LogOut, Plus, X, Sparkles, User, Edit3 } from 'lucide-react'
-import api from '../lib/api'
+import { Save, LogOut, Check, Sparkles, User, Trophy, Flame, Coins, Shield } from 'lucide-react'
+import { getUserStats, RETRO_AVATARS, RETRO_ACHIEVEMENTS } from '../lib/userStats'
 import { TOPIC_MODULES } from '../data/topicModules'
-
-const AVATAR_OPTIONS = [
-  '🧑‍🎓', '👨‍💻', '👩‍💻', '👩‍🔬', '👨‍🏫', '🧑‍🚀',
-  '🦸‍♂️', '🥷', '🧙‍♂️', '🦊', '🦁', '🦉',
-  '🚀', '💎', '⚡', '🎯'
-]
+import soundFx from '../lib/soundFx'
 
 export default function Profile() {
   const { user, signOut, updateUser } = useAuth()
   const navigate = useNavigate()
 
-  const [name, setName] = useState(user?.name || '')
-  const [email, setEmail] = useState(user?.email || '')
-  const [avatar, setAvatar] = useState(() => user?.avatar || (user?.id && localStorage.getItem(`quizmaster-avatar-${user.id}`)) || '🧑‍🎓')
-  const [bio, setBio] = useState('Passionate learner and software developer.')
-  const [difficulty, setDifficulty] = useState('Medium')
-  const [reminders, setReminders] = useState(true)
+  const [name, setName] = useState(user?.name || (user?.isGuest ? 'PLAYER 1' : 'RetroGamer'))
+  const [avatar, setAvatar] = useState(() => user?.avatar || (user?.id && localStorage.getItem(`quizmaster-avatar-${user.id}`)) || '👾')
+  const [bio, setBio] = useState('Arcade speed-runner and knowledge enthusiast.')
   const [savedSuccess, setSavedSuccess] = useState(false)
 
-  // Avatar Modal State
-  const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+  const stats = getUserStats(user?.id)
 
-  // Preferred Topics & Topic Editor State
-  const [topics, setTopics] = useState([
-    'Java',
-    'Python',
-    'Data Structures & Algorithms',
-    'Algebra & Equations',
-  ])
-  const [isEditingTopics, setIsEditingTopics] = useState(false)
-
-  // All available topics derived directly from TOPIC_MODULES
-  const allAvailableTopicList = useMemo(() => {
-    return Object.values(TOPIC_MODULES).map((t) => ({
-      name: t.name,
-      icon: t.icon,
-      id: t.id,
-      category: t.category,
-    }))
-  }, [])
-
-  useEffect(() => {
-    if (user?.name) setName(user.name)
-    if (user?.email) setEmail(user.email)
-    if (user?.avatar) setAvatar(user.avatar)
-
-    const savedTopics = localStorage.getItem('quizmaster-preferred-topics')
-    if (savedTopics) {
-      try {
-        const parsed = JSON.parse(savedTopics)
-        if (Array.isArray(parsed) && parsed.length >= 0) {
-          setTopics(parsed)
-        }
-      } catch {}
+  const handleAvatarSelect = (avEmoji) => {
+    soundFx.playSelect()
+    setAvatar(avEmoji)
+    if (user?.id) {
+      localStorage.setItem(`quizmaster-avatar-${user.id}`, avEmoji)
     }
-  }, [user])
-
-  const handleRemoveTopic = (topicToRemove) => {
-    setTopics((prev) => {
-      const updated = prev.filter((t) => t !== topicToRemove)
-      localStorage.setItem('quizmaster-preferred-topics', JSON.stringify(updated))
-      return updated
-    })
-  }
-
-  const handleToggleTopic = (topicName) => {
-    setTopics((prev) => {
-      let updated
-      if (prev.includes(topicName)) {
-        updated = prev.filter((t) => t !== topicName)
-      } else {
-        updated = [...prev, topicName]
-      }
-      localStorage.setItem('quizmaster-preferred-topics', JSON.stringify(updated))
-      return updated
-    })
   }
 
   const handleSave = (e) => {
-    if (e) e.preventDefault()
+    e.preventDefault()
+    soundFx.playCoin()
+    updateUser({ name, avatar })
     setSavedSuccess(true)
-    setTimeout(() => setSavedSuccess(false), 3000)
-
-    const cleanName = name.trim() || user?.name || 'User'
-    const cleanEmail = email.trim() || user?.email || ''
-
-    if (user?.id) {
-      localStorage.setItem(`quizmaster-avatar-${user.id}`, avatar)
-    }
-    localStorage.setItem('quizmaster-preferred-topics', JSON.stringify(topics))
-    localStorage.removeItem('qm_leaderboard_cache') // Clear leaderboard cache so new name/avatar appears immediately
-
-    if (updateUser) {
-      updateUser({ name: cleanName, email: cleanEmail, avatar })
-    }
-
-    // 3. Persist to PostgreSQL backend
-    if (user) {
-      api.put('/profile/', {
-        name: cleanName,
-        email: cleanEmail,
-        bio,
-        avatar
-      }).then((res) => {
-        if (res.data?.user && updateUser) {
-          updateUser(res.data.user)
-        }
-      }).catch(() => {})
-    }
+    setTimeout(() => setSavedSuccess(false), 2400)
   }
 
   const handleLogout = () => {
+    soundFx.playSelect()
     signOut()
-    navigate('/login')
+    navigate('/')
   }
 
   return (
-    <div className="qm-profile-page">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', maxWidth: '1000px', margin: '0 auto' }}>
       {/* HEADER */}
-      <div className="qm-profile-top-header">
-        <h1>Profile & Preferences</h1>
-        <p>Manage your public identity, study topics, and customized study preferences.</p>
+      <div>
+        <div className="hero-tag-badge">
+          <span>🪪</span>
+          <span>PLAYER CREDENTIALS &amp; CUSTOMIZATION</span>
+        </div>
+        <h1 className="section-retro-title">PLAYER 1 ID CARD</h1>
+        <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
+          Personalize your arcade avatar, gamer tag, and inspect your unlocked achievements.
+        </p>
       </div>
 
-      <div className="qm-profile-two-column-grid">
-        {/* LEFT: PROFILE FORM */}
-        <div className="qm-profile-main-card">
-          <h2 className="qm-column-title">Account Information</h2>
-
-          {/* AVATAR HERO ROW */}
-          <div className="qm-avatar-change-strip">
-            <div className="qm-profile-avatar-giant">
-              <span className="giant-emoji">{avatar}</span>
-            </div>
-            <div className="qm-avatar-actions-meta">
-              <span className="qm-avatar-heading">Profile Avatar</span>
-              <p className="qm-avatar-sub">This emoji represents you across leaderboards and stats.</p>
-              <button
-                type="button"
-                className="qm-btn-outline-sm"
-                onClick={() => setShowAvatarPicker(!showAvatarPicker)}
-              >
-                <Edit3 size={14} />
-                <span>{showAvatarPicker ? 'Close Picker' : 'Change Avatar'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* POPUP AVATAR PICKER */}
-          {showAvatarPicker && (
-            <div className="qm-avatar-picker-bubble">
-              <span className="picker-title">Select your avatar:</span>
-              <div className="avatar-grid-emojis">
-                {AVATAR_OPTIONS.map((av) => (
-                  <button
-                    key={av}
-                    type="button"
-                    className={`avatar-choice-btn ${avatar === av ? 'selected' : ''}`}
-                    onClick={() => {
-                      setAvatar(av)
-                      setShowAvatarPicker(false)
-                      if (user?.id) {
-                        localStorage.setItem(`quizmaster-avatar-${user.id}`, av)
-                      }
-                      if (updateUser) {
-                        updateUser({ avatar: av })
-                      }
-                      if (user) {
-                        api.put('/profile/', { avatar: av }).catch(() => {})
-                      }
-                    }}
-                  >
-                    {av}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleSave} className="qm-profile-fields-form mt-3">
-            <div className="qm-field-box">
-              <label>Full Name</label>
-              <input
-                type="text"
-                placeholder="Enter your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-
-            <div className="qm-field-box">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label>Email Address</label>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
-                  🔒 Fixed
-                </span>
-              </div>
-              <input
-                type="email"
-                value={user?.email || email}
-                disabled
-                readOnly
-                title="Email cannot be changed after account creation"
-                style={{ opacity: 0.75, cursor: 'not-allowed', backgroundColor: 'var(--bg-app)' }}
-              />
-            </div>
-
-            <div className="qm-field-box">
-              <label>Bio</label>
-              <textarea
-                rows={3}
-                placeholder="Tell us about yourself"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-              />
-            </div>
-
-            <div className="qm-profile-actions-bottom">
-              <button type="submit" className="qm-btn-primary-sm">
-                <Save size={15} />
-                <span>Save Changes</span>
-              </button>
-
-              <button type="button" onClick={handleLogout} className="qm-profile-logout-btn">
-                <LogOut size={15} />
-                <span>Log out</span>
-              </button>
-
-              {savedSuccess && (
-                <span className="qm-save-indicator">
-                  <CheckCircle2 size={16} className="text-emerald" /> Changes saved!
-                </span>
-              )}
-            </div>
-          </form>
+      {/* ARCADE ID CARD */}
+      <div
+        style={{
+          background: '#000000',
+          border: '4px solid var(--neon-cyan)',
+          boxShadow: '8px 8px 0px var(--neon-cyan)',
+          borderRadius: 'var(--radius-xl)',
+          padding: '32px',
+          display: 'grid',
+          gridTemplateColumns: 'auto 1fr',
+          gap: '28px',
+          alignItems: 'center',
+        }}
+      >
+        <div
+          style={{
+            width: '90px',
+            height: '90px',
+            background: 'var(--bg-card)',
+            border: '4px solid var(--neon-yellow)',
+            boxShadow: '4px 4px 0px var(--neon-yellow)',
+            borderRadius: 'var(--radius-lg)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '50px',
+          }}
+        >
+          {avatar}
         </div>
 
-        {/* RIGHT: PREFERENCES */}
-        <div className="qm-profile-pref-column">
-          <div className="qm-pref-header-row">
-            <h2 className="qm-column-title">Preferences</h2>
-          </div>
-
-          <div className="qm-pref-subgroup">
-            <div className="qm-pref-label-row">
-              <label>Preferred Topics ({topics.length})</label>
-              <button
-                type="button"
-                className="qm-btn-text-sm"
-                onClick={() => setIsEditingTopics(!isEditingTopics)}
-              >
-                {isEditingTopics ? 'Done Editing' : 'Edit Topics'}
-              </button>
-            </div>
-
-            {/* TAGS LIST */}
-            {topics.length > 0 ? (
-              <div className="qm-tags-row">
-                {topics.map((t) => (
-                  <span key={t} className="qm-topic-tag-pill">
-                    <span>{t}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveTopic(t)}
-                      className="tag-remove-x"
-                      title={`Remove ${t}`}
-                    >
-                      ✕
-                    </button>
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-slate-400 my-2">No preferred topics selected yet.</p>
-            )}
-
-            {/* INTERACTIVE TOPIC PICKER DRAWER */}
-            {isEditingTopics && (
-              <div className="qm-topic-picker-box">
-                <span className="qm-topic-picker-hint">Click topics to add or remove:</span>
-                <div className="qm-available-topics-chips">
-                  {allAvailableTopicList.map((t) => {
-                    const isSelected = topics.includes(t.name) || topics.includes(t.id)
-                    return (
-                      <button
-                        key={t.id}
-                        type="button"
-                        className={`qm-topic-chip-btn ${isSelected ? 'active' : ''}`}
-                        onClick={() => handleToggleTopic(t.name)}
-                      >
-                        <span className="mr-1">{t.icon}</span>
-                        {isSelected ? '✓ ' : '+ '}
-                        {t.name}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '32px', fontWeight: '900', color: '#fff' }}>
+              {name}
+            </h2>
+            <span className="arcade-tag-chip" style={{ background: 'var(--neon-green)', color: '#000' }}>
+              LVL {stats.level}
+            </span>
+            {user?.isGuest && (
+              <span className="arcade-tag-chip" style={{ background: 'var(--neon-pink)', color: '#fff' }}>
+                GUEST
+              </span>
             )}
           </div>
 
-          <div className="qm-pref-subgroup mt-6">
-            <label>Default Difficulty</label>
-            <div className="qm-select-styled-box">
-              <select
-                value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value)}
-              >
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
-              </select>
-              <ChevronDown size={16} className="qm-select-arrow" />
-            </div>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '6px' }}>
+            {bio}
+          </p>
+
+          <div style={{ display: 'flex', gap: '20px', marginTop: '14px', flexWrap: 'wrap', fontFamily: 'var(--font-pixel)', fontSize: '10px' }}>
+            <span style={{ color: 'var(--neon-yellow)' }}>🪙 {stats.coins || 100} COINS</span>
+            <span style={{ color: 'var(--neon-pink)' }}>🔥 {stats.current_streak} DAY STREAK</span>
+            <span style={{ color: 'var(--neon-cyan)' }}>🎯 {stats.accuracy}% ACCURACY</span>
+            <span style={{ color: 'var(--neon-green)' }}>🏆 {stats.high_score || 0} HIGH SCORE</span>
+          </div>
+        </div>
+      </div>
+
+      {/* AVATAR SELECTOR */}
+      <div style={{ background: 'var(--bg-card)', border: '3px solid #000', borderRadius: 'var(--radius-xl)', padding: '24px', boxShadow: '5px 5px 0px #000' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 'bold', marginBottom: '8px' }}>
+          CHOOSE YOUR PIXEL AVATAR
+        </h3>
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '18px' }}>
+          Select an 8-bit character to represent you on the high scores leaderboard:
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px' }}>
+          {RETRO_AVATARS.map((av) => (
+            <button
+              key={av.id}
+              onClick={() => handleAvatarSelect(av.emoji)}
+              className="retro-tool-btn"
+              style={{
+                background: avatar === av.emoji ? 'var(--neon-yellow)' : 'var(--bg-secondary)',
+                color: avatar === av.emoji ? '#000' : '#fff',
+                borderColor: avatar === av.emoji ? '#000' : '#333',
+                padding: '12px 8px',
+                flexDirection: 'column',
+                gap: '6px',
+                textAlign: 'center',
+                boxShadow: avatar === av.emoji ? '4px 4px 0px #000' : '2px 2px 0px #000',
+              }}
+            >
+              <span style={{ fontSize: '28px' }}>{av.emoji}</span>
+              <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px' }}>{av.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* EDIT GAMER TAG FORM */}
+      <div style={{ background: 'var(--bg-card)', border: '3px solid #000', borderRadius: 'var(--radius-xl)', padding: '24px', boxShadow: '5px 5px 0px #000' }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '20px', fontWeight: 'bold', marginBottom: '16px' }}>
+          PLAYER SETTINGS
+        </h3>
+
+        <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div>
+            <label style={{ display: 'block', fontFamily: 'var(--font-pixel)', fontSize: '9px', color: 'var(--neon-cyan)', marginBottom: '8px' }}>
+              GAMER TAG / CALLSIGN
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="coinop-input"
+              required
+            />
           </div>
 
-          <div className="qm-pref-subgroup mt-6">
-            <label>Daily Reminders</label>
-            <div className="qm-reminder-toggle-row">
-              <span className="qm-reminder-desc">Get reminded to practice daily</span>
-              <label className="qm-switch">
-                <input
-                  type="checkbox"
-                  checked={reminders}
-                  onChange={(e) => setReminders(e.target.checked)}
-                />
-                <span className="qm-slider round" />
-              </label>
-            </div>
+          <div>
+            <label style={{ display: 'block', fontFamily: 'var(--font-pixel)', fontSize: '9px', color: 'var(--neon-cyan)', marginBottom: '8px' }}>
+              PLAYER BIO / STATUS
+            </label>
+            <input
+              type="text"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              className="coinop-input"
+            />
           </div>
+
+          <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+            <button type="submit" className="btn-retro-yellow">
+              <Save size={14} />
+              <span>SAVE CREDENTIALS</span>
+            </button>
+
+            {savedSuccess && (
+              <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: 'var(--neon-green)' }}>
+                ✓ SAVED!
+              </span>
+            )}
+          </div>
+        </form>
+      </div>
+
+      {/* UNLOCKED TROPHIES */}
+      <div style={{ background: '#000', border: '3px solid #000', borderRadius: 'var(--radius-xl)', padding: '24px', boxShadow: '5px 5px 0px #000' }}>
+        <h3 style={{ fontFamily: 'var(--font-pixel)', fontSize: '11px', color: 'var(--neon-yellow)', marginBottom: '16px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>
+          COLLECTED TROPHIES ({RETRO_ACHIEVEMENTS.length})
+        </h3>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
+          {RETRO_ACHIEVEMENTS.map((ach) => (
+            <div
+              key={ach.id}
+              style={{
+                background: 'var(--bg-secondary)',
+                border: '2px solid #333',
+                borderRadius: 'var(--radius-md)',
+                padding: '14px',
+                display: 'flex',
+                gap: '12px',
+                alignItems: 'center',
+              }}
+            >
+              <span style={{ fontSize: '28px' }}>{ach.icon}</span>
+              <div>
+                <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '9px', color: '#fff' }}>{ach.name}</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>{ach.desc}</div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

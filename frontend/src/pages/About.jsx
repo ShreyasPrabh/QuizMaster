@@ -1,110 +1,73 @@
 import { Link } from 'react-router-dom'
 import { ArrowLeft, Target, Users, Zap, Shield, BookOpen, Trophy } from 'lucide-react'
+import Navbar from '../components/Navbar'
+import RetroMarquee from '../components/RetroMarquee'
+import soundFx from '../lib/soundFx'
 
 export default function About() {
   return (
     <div className="landing-page-root">
-      {/* NAVBAR */}
-      <header className="landing-navbar">
-        <div className="landing-nav-brand">
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none' }}>
-            <div className="qm-brand-logo">
-              <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
-                <rect width="28" height="28" rx="8" fill="#6366F1" />
-                <path d="M7 14L14 7L21 14L14 21L7 14Z" fill="white" fillOpacity="0.8" />
-                <path d="M14 7V21" stroke="#6366F1" strokeWidth="2" />
-                <path d="M7 14H21" stroke="#6366F1" strokeWidth="2" />
-              </svg>
-            </div>
-            <span className="landing-brand-name">QuizClub</span>
-          </Link>
-        </div>
+      <RetroMarquee />
+      <Navbar />
 
-        <nav className="landing-nav-links">
-          <Link to="/">Home</Link>
-          <Link to="/about" className="active">About</Link>
-          <Link to="/faq">FAQ</Link>
-          <Link to="/contact">Contact</Link>
-        </nav>
-
-        <div className="landing-nav-actions">
-          <Link to="/login" className="landing-btn-ghost">Log in</Link>
-          <Link to="/signup" className="landing-btn-primary">Sign up</Link>
-        </div>
-      </header>
-
-      {/* CONTENT */}
-      <main style={{ maxWidth: '960px', margin: '0 auto', padding: '3.5rem 2rem 5rem' }}>
-        <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', textDecoration: 'none', marginBottom: '2rem', fontSize: '0.9rem', fontWeight: '600' }}>
-          <ArrowLeft size={16} /> Back to Home
+      <main style={{ maxWidth: '1000px', margin: '0 auto', padding: '50px 24px 80px' }}>
+        <Link
+          to="/"
+          onClick={() => soundFx.playSelect()}
+          className="retro-tool-btn"
+          style={{ width: 'fit-content', marginBottom: '24px' }}
+        >
+          <ArrowLeft size={14} />
+          <span>← BACK TO HOME</span>
         </Link>
 
-        <h1 style={{ fontSize: '2.5rem', fontWeight: '900', color: '#0F172A', marginBottom: '1rem', letterSpacing: '-0.02em' }}>
-          About QuizClub
+        <div className="hero-tag-badge">
+          <span>👾</span>
+          <span>THE STORY OF QUIZCLUB ARCADE</span>
+        </div>
+
+        <h1 className="section-retro-title" style={{ fontSize: '42px', marginBottom: '16px' }}>
+          ABOUT THE ARCADE
         </h1>
-        <p style={{ fontSize: '1.15rem', color: 'var(--text-muted)', lineHeight: '1.7', marginBottom: '3rem' }}>
-          QuizClub (www.quizclub.in) is an interactive, gamified learning and assessment platform built for developers, students, and lifelong learners. We transform technical knowledge acquisition into engaging, bite-sized daily quiz challenges.
+        <p style={{ fontSize: '17px', color: 'var(--text-secondary)', lineHeight: '1.7', marginBottom: '40px' }}>
+          <strong>QuizClub Arcade</strong> (www.quizclub.in) is an interactive, gamified learning and assessment platform built for developers, students, and lifelong learners. We blend 80s/90s coin-op arcade nostalgia with rigorous computer science, mathematics, science, and language curriculum.
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3.5rem' }}>
-          <div className="qm-card" style={{ padding: '2rem' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366F1', marginBottom: '1.25rem' }}>
-              <Target size={24} />
-            </div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '0.5rem', color: '#0F172A' }}>Our Mission</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: '1.6' }}>
-              To make technical learning and interview preparation accessible, structured, and genuinely engaging through balanced, curriculum-aligned MCQs.
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '48px' }}>
+          <div className="retro-cartridge-card">
+            <div className="cartridge-icon-box box-pink">🎯</div>
+            <h3 className="cartridge-title" style={{ fontSize: '20px' }}>Our Mission</h3>
+            <p className="cartridge-desc">
+              Make technical preparation and domain mastery thrilling, accessible, and structured through balanced, speed-timed MCQs and instant 8-bit feedback.
             </p>
           </div>
 
-          <div className="qm-card" style={{ padding: '2rem' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: '#ECFDF5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10B981', marginBottom: '1.25rem' }}>
-              <Zap size={24} />
-            </div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '0.5rem', color: '#0F172A' }}>Active Practice</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: '1.6' }}>
-              Active recall and spaced repetition are the most effective ways to retain concepts. QuizClub turns theory into 20-question practice modules.
+          <div className="retro-cartridge-card">
+            <div className="cartridge-icon-box box-cyan">⚡</div>
+            <h3 className="cartridge-title" style={{ fontSize: '20px' }}>Balanced Design</h3>
+            <p className="cartridge-desc">
+              Every single quiz session serves 20 questions carefully distributed across difficulty tiers with randomized, deterministic option balancing.
             </p>
           </div>
 
-          <div className="qm-card" style={{ padding: '2rem' }}>
-            <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: '#FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#F59E0B', marginBottom: '1.25rem' }}>
-              <Trophy size={24} />
-            </div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: '700', marginBottom: '0.5rem', color: '#0F172A' }}>Competitive Growth</h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', lineHeight: '1.6' }}>
-              Climb the global leaderboard, maintain daily practice streaks, and track real-time accuracy across multiple subject domains.
+          <div className="retro-cartridge-card">
+            <div className="cartridge-icon-box box-yellow">🏆</div>
+            <h3 className="cartridge-title" style={{ fontSize: '20px' }}>Arcade High Scores</h3>
+            <p className="cartridge-desc">
+              Level up your player profile, maintain daily streak multipliers, earn arcade coins, and compete for crowns on the global leaderboard.
             </p>
           </div>
         </div>
 
-        <div className="qm-card" style={{ padding: '2.5rem', background: '#F8FAFC', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)' }}>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: '800', marginBottom: '1rem', color: '#0F172A' }}>The QuizClub Learning Framework</h2>
-          <ul style={{ color: 'var(--text-muted)', lineHeight: '1.9', fontSize: '0.95rem', paddingLeft: '1.25rem' }}>
-            <li><strong>6 Major Subject Categories:</strong> Programming, Computer Science, Mathematics, Science, General Knowledge, and English.</li>
-            <li><strong>60 Comprehensive Topic Modules:</strong> From Python, Java, and DSA to Linear Algebra and Electromagnetism.</li>
-            <li><strong>3 Skill Tiers:</strong> Progressive Easy, Medium, and Hard tiers designed for stepwise learning.</li>
-            <li><strong>25% Choice Distribution:</strong> Algorithmically balanced options to prevent blind guessing.</li>
-          </ul>
+        <div style={{ background: '#000', border: '3px solid #000', borderRadius: 'var(--radius-xl)', padding: '32px', boxShadow: '6px 6px 0px #000' }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '24px', fontWeight: 'bold', color: 'var(--neon-yellow)', marginBottom: '12px' }}>
+            Built With Cutting-Edge Web Standards
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '15px', lineHeight: '1.7' }}>
+            Engineered with React 19, Vite, Web Audio API synthesis for zero-dependency sound effects, CSS neo-brutalism design tokens, and modular question data architecture.
+          </p>
         </div>
       </main>
-
-      {/* FOOTER */}
-      <footer className="landing-footer">
-        <div className="landing-footer-brand">
-          <span>⬡ QuizClub</span>
-          <span className="landing-footer-tagline">Learn. Quiz. Improve. Repeat. · www.quizclub.in</span>
-        </div>
-        <div className="landing-footer-links">
-          <Link to="/">Home</Link>
-          <Link to="/about">About</Link>
-          <Link to="/faq">FAQ</Link>
-          <Link to="/contact">Contact</Link>
-          <Link to="/privacy-policy">Privacy Policy</Link>
-          <Link to="/terms">Terms</Link>
-        </div>
-        <p className="landing-footer-copy">© 2026 QuizClub (www.quizclub.in). All rights reserved.</p>
-      </footer>
     </div>
   )
 }

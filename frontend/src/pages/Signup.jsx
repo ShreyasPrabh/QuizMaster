@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Eye, EyeOff, Sparkles, BarChart2, Smile } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, UserPlus } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
+import soundFx from '../lib/soundFx'
+import RetroMarquee from '../components/RetroMarquee'
 
 export default function Signup() {
   const [name, setName] = useState('')
@@ -9,7 +11,6 @@ export default function Signup() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -21,7 +22,7 @@ export default function Signup() {
     setError('')
 
     if (!name.trim()) {
-      setError('Please enter your full name.')
+      setError('Please enter a gamer tag.')
       return
     }
     if (password.length < 6) {
@@ -40,9 +41,10 @@ export default function Signup() {
     } catch (err) {
       const data = err?.response?.data
       const msg =
+        err?.message ||
         data?.error ||
         (data && typeof data === 'object' ? Object.values(data).flat().join(' ') : null) ||
-        'Could not create account. Please check your details.'
+        'Could not create account. Please try again.'
       setError(msg)
     } finally {
       setLoading(false)
@@ -50,138 +52,136 @@ export default function Signup() {
   }
 
   return (
-    <div className="auth-split-layout">
-      {/* LEFT FORM PANEL */}
-      <div className="auth-form-side">
-        <Link to="/" className="auth-back-link">
-          <ArrowLeft size={16} />
-          <span>Back to home</span>
-        </Link>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <RetroMarquee />
 
-        <div className="auth-form-header">
-          <h1>Create your account</h1>
-          <p>Join QuizClub and start your journey</p>
-        </div>
+      <div className="auth-coinop-root" style={{ flex: 1 }}>
+        <div className="auth-coinop-card">
+          <Link
+            to="/"
+            onClick={() => soundFx.playSelect()}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              color: 'var(--neon-cyan)',
+              textDecoration: 'none',
+              fontFamily: 'var(--font-pixel)',
+              fontSize: '9px',
+              marginBottom: '20px',
+            }}
+          >
+            <ArrowLeft size={12} />
+            <span>← ARCADE HOME</span>
+          </Link>
 
-        {error && <div className="auth-error-banner">{error}</div>}
-
-        <form onSubmit={handleSubmit} className="auth-inputs-form">
-          <div className="auth-field-group">
-            <label>Full Name</label>
-            <input
-              type="text"
-              placeholder="John Doe"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
+          <div className="coin-slot-header">
+            <div style={{ fontSize: '36px', marginBottom: '8px' }}>🕹️</div>
+            <h1>JOIN THE ARCADE</h1>
+            <p>Create your permanent account to compete on high scores</p>
           </div>
 
-          <div className="auth-field-group">
-            <label>Email</label>
-            <input
-              type="email"
-              placeholder="john@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
+          {error && (
+            <div
+              style={{
+                background: 'rgba(255, 0, 127, 0.15)',
+                border: '2px solid var(--neon-pink)',
+                borderRadius: 'var(--radius-md)',
+                padding: '10px 14px',
+                color: 'var(--neon-pink)',
+                fontSize: '13px',
+                marginBottom: '16px',
+              }}
+            >
+              {error}
+            </div>
+          )}
 
-          <div className="auth-field-group">
-            <label>Password</label>
-            <div className="password-input-wrap">
+          <form onSubmit={handleSubmit}>
+            <div className="coinop-field-group">
+              <label>PLAYER GAMER TAG</label>
+              <input
+                type="text"
+                placeholder="PixelMaster99"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="coinop-input"
+                required
+              />
+            </div>
+
+            <div className="coinop-field-group">
+              <label>EMAIL ADDRESS</label>
+              <input
+                type="email"
+                placeholder="player@arcade.io"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="coinop-input"
+                required
+              />
+            </div>
+
+            <div className="coinop-field-group">
+              <label>PASSWORD (MIN 6 CHARS)</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="coinop-input"
+                  style={{ paddingRight: '44px' }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: '12px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="coinop-field-group">
+              <label>CONFIRM PASSWORD</label>
               <input
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-              <button
-                type="button"
-                className="password-toggle-btn"
-                onClick={() => setShowPassword(!showPassword)}
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-          </div>
-
-          <div className="auth-field-group">
-            <label>Confirm Password</label>
-            <div className="password-input-wrap">
-              <input
-                type={showConfirmPassword ? 'text' : 'password'}
-                placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                className="coinop-input"
                 required
               />
-              <button
-                type="button"
-                className="password-toggle-btn"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                tabIndex={-1}
-              >
-                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
             </div>
-          </div>
 
-          <button type="submit" className="auth-primary-submit-btn" disabled={loading}>
-            {loading ? 'Creating account...' : 'Sign up'}
-          </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-retro-primary"
+              style={{ width: '100%', justifyContent: 'center', marginTop: '10px' }}
+            >
+              <UserPlus size={15} />
+              <span>{loading ? 'REGISTERING PLAYER...' : 'INSERT COIN & SIGN UP'}</span>
+            </button>
+          </form>
 
-          <p className="auth-switch-text">
-            Already have an account? <Link to="/login">Log in</Link>
+          <p style={{ textAlign: 'center', marginTop: '24px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+            Already have a tag?{' '}
+            <Link to="/login" style={{ color: 'var(--neon-yellow)', fontWeight: 'bold', textDecoration: 'none' }}>
+              Log in here
+            </Link>
           </p>
-        </form>
-      </div>
-
-      {/* RIGHT VALUE PROP PANEL */}
-      <div className="auth-value-side">
-        <div className="auth-value-content">
-          <div className="auth-3d-illustration">
-            <div className="illustration-books-stack">
-              <span className="emoji-cap">🎓</span>
-              <span className="emoji-books">📚</span>
-              <span className="emoji-coffee">☕</span>
-            </div>
-          </div>
-
-          <div className="auth-features-list">
-            <div className="auth-feature-row">
-              <div className="feature-bullet-icon bg-indigo">
-                <Sparkles size={18} />
-              </div>
-              <div>
-                <h4>Personalized quizzes</h4>
-                <p>Based on your favorite topics</p>
-              </div>
-            </div>
-
-            <div className="auth-feature-row">
-              <div className="feature-bullet-icon bg-purple">
-                <BarChart2 size={18} />
-              </div>
-              <div>
-                <h4>Track your progress</h4>
-                <p>See your stats and improve</p>
-              </div>
-            </div>
-
-            <div className="auth-feature-row">
-              <div className="feature-bullet-icon bg-blue">
-                <Smile size={18} />
-              </div>
-              <div>
-                <h4>Learn and have fun</h4>
-                <p>Challenge yourself daily</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

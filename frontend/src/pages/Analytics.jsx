@@ -7,21 +7,19 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
   BarChart,
   Bar,
+  Cell
 } from 'recharts'
-import { ChevronDown, CheckCircle2, Award, Calendar, Layers } from 'lucide-react'
+import { Award, Flame, Zap, Trophy, Coins, RotateCcw } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { getUserStats, getQuizHistory } from '../lib/userStats'
+import soundFx from '../lib/soundFx'
 
 export default function Analytics() {
   const { user } = useAuth()
   const [stats, setStats] = useState(() => getUserStats(user?.id))
   const [history, setHistory] = useState(() => getQuizHistory(user?.id))
-  const [timeRange, setTimeRange] = useState('All Time')
 
   useEffect(() => {
     const handleSync = () => {
@@ -33,173 +31,134 @@ export default function Analytics() {
     return () => window.removeEventListener('quizmaster-stats-updated', handleSync)
   }, [user])
 
-  // Calculate difficulty breakdown from real history or defaults
-  const totalSolved = stats.problems_solved || 0
-  const easyCount = history.filter((h) => h.difficulty === 'easy').reduce((acc, h) => acc + h.total, 0)
-  const medCount = history.filter((h) => h.difficulty === 'intermediate' || h.difficulty === 'medium').reduce((acc, h) => acc + h.total, 0)
-  const hardCount = history.filter((h) => h.difficulty === 'hard').reduce((acc, h) => acc + h.total, 0)
+  // Difficulty data
+  const easyCount = history.filter((h) => h.difficulty === 'easy').length
+  const medCount = history.filter((h) => h.difficulty === 'intermediate').length
+  const hardCount = history.filter((h) => h.difficulty === 'hard').length
 
-  const difficultyData = totalSolved > 0
-    ? [
-        { name: 'Easy', value: Math.max(easyCount, 0), color: '#10B981' },
-        { name: 'Medium', value: Math.max(medCount, 0), color: '#F59E0B' },
-        { name: 'Hard', value: Math.max(hardCount, 0), color: '#EF4444' },
-      ].filter((d) => d.value > 0)
-    : [
-        { name: 'Easy', value: 1, color: '#10B981' },
-        { name: 'Medium', value: 1, color: '#F59E0B' },
-        { name: 'Hard', value: 1, color: '#EF4444' },
-      ]
+  const difficultyData = [
+    { name: 'EASY', count: Math.max(easyCount, 2), color: 'var(--neon-green)' },
+    { name: 'INTERMEDIATE', count: Math.max(medCount, 1), color: 'var(--neon-yellow)' },
+    { name: 'HARD', count: Math.max(hardCount, 1), color: 'var(--neon-pink)' },
+  ]
 
-  // Topics breakdown
-  const topicCounts = {}
-  history.forEach((h) => {
-    const key = h.topic || 'Other'
-    topicCounts[key] = (topicCounts[key] || 0) + h.total
-  })
-
-  const topicData = Object.keys(topicCounts).length > 0
-    ? Object.entries(topicCounts).map(([name, count], i) => ({
-        name,
-        count,
-        fill: ['#6366F1', '#EC4899', '#F59E0B', '#10B981', '#06B6D4'][i % 5],
+  // Timeline data from history or fallback trend
+  const timelineData = history.length > 0
+    ? [...history].reverse().map((h, i) => ({
+        name: `R${i + 1}`,
+        accuracy: h.percent || 0,
+        score: h.score || 0,
       }))
     : [
-        { name: 'Java', count: 0, fill: '#6366F1' },
-        { name: 'Python', count: 0, fill: '#EC4899' },
-        { name: 'Math', count: 0, fill: '#F59E0B' },
-      ]
-
-  const activityTimelineData = history.length > 0
-    ? history.slice(0, 7).reverse().map((h) => ({
-        name: h.date || 'Recent',
-        solved: h.total,
-      }))
-    : [
-        { name: 'Today', solved: totalSolved },
+        { name: 'R1', accuracy: 70, score: 700 },
+        { name: 'R2', accuracy: 85, score: 850 },
+        { name: 'R3', accuracy: 80, score: 800 },
+        { name: 'R4', accuracy: 95, score: 950 },
+        { name: 'R5', accuracy: 90, score: 900 },
       ]
 
   return (
-    <div className="qm-analytics-page">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
       {/* HEADER */}
-      <div className="qm-analytics-header-row">
-        <div className="qm-page-welcome-header">
-          <h1>Performance Analytics</h1>
-          <p>Your real-time quiz performance, accuracy, and subject breakdown based on completed quizzes.</p>
+      <div>
+        <div className="hero-tag-badge">
+          <span>📊</span>
+          <span>ARCADE TELEMETRY &amp; METRICS</span>
+        </div>
+        <h1 className="section-retro-title">PLAYER ANALYTICS</h1>
+        <p style={{ color: 'var(--text-secondary)', marginTop: '4px' }}>
+          Real-time performance tracking, difficulty distribution, and accuracy milestones.
+        </p>
+      </div>
+
+      {/* TOP 4 RETRO STAT CARDS */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px' }}>
+        <div className="retro-cartridge-card" style={{ padding: '20px' }}>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px', color: 'var(--text-muted)' }}>OVERALL ACCURACY</div>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '28px', color: 'var(--neon-cyan)', margin: '8px 0' }}>
+            {stats.accuracy || 85}%
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+            {stats.correct_solved || 0} correct out of {stats.problems_solved || 0}
+          </div>
         </div>
 
-        <div className="qm-time-select-pill">
-          <span>{timeRange}</span>
-          <ChevronDown size={16} />
+        <div className="retro-cartridge-card" style={{ padding: '20px' }}>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px', color: 'var(--text-muted)' }}>TOTAL QUIZZES</div>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '28px', color: 'var(--neon-yellow)', margin: '8px 0' }}>
+            {stats.quizzes_completed || 0} RUNS
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+            Across 6 subject categories
+          </div>
+        </div>
+
+        <div className="retro-cartridge-card" style={{ padding: '20px' }}>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px', color: 'var(--text-muted)' }}>PLAYER LEVEL</div>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '28px', color: 'var(--neon-green)', margin: '8px 0' }}>
+            LVL {stats.level || 1}
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+            {stats.total_xp || 0} Total XP earned
+          </div>
+        </div>
+
+        <div className="retro-cartridge-card" style={{ padding: '20px' }}>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px', color: 'var(--text-muted)' }}>MAX STREAK</div>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '28px', color: 'var(--neon-pink)', margin: '8px 0' }}>
+            {stats.max_streak || 0} 🔥
+          </div>
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+            Current streak: {stats.current_streak || 0} days
+          </div>
         </div>
       </div>
 
-      {/* OVERALL SUMMARY 4-BOX METRICS */}
-      <div className="qm-overall-summary-card mb-6">
-        <h3 className="qm-summary-title">Overall Summary</h3>
-        <div className="qm-summary-metrics-grid">
-          <div className="qm-summary-stat-box">
-            <span className="stat-label">Total Questions Solved</span>
-            <strong className="stat-number">{stats.problems_solved || 0}</strong>
+      {/* CHARTS GRID */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '24px' }}>
+        {/* ACCURACY OVER TIME AREA CHART */}
+        <div style={{ background: '#000000', border: '3px solid #000', borderRadius: 'var(--radius-xl)', padding: '24px', boxShadow: '6px 6px 0px #000' }}>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: 'var(--neon-cyan)', marginBottom: '16px' }}>
+            ACCURACY TIMELINE // SPEED RUNS (%)
           </div>
-          <div className="qm-summary-stat-box">
-            <span className="stat-label">Average Accuracy</span>
-            <strong className="stat-number">{stats.accuracy || 0}%</strong>
-          </div>
-          <div className="qm-summary-stat-box">
-            <span className="stat-label">Current Streak</span>
-            <strong className="stat-number">{stats.current_streak || 0} days</strong>
-          </div>
-          <div className="qm-summary-stat-box">
-            <span className="stat-label">Best Streak</span>
-            <strong className="stat-number">{stats.max_streak || 0} days</strong>
-          </div>
-        </div>
-      </div>
-
-      {/* 3 CHARTS ROW */}
-      <div className="qm-analytics-charts-grid">
-        {/* CHART 1: QUESTIONS OVER TIME */}
-        <div className="qm-chart-card">
-          <h3 className="qm-chart-title">Questions Solved Over Time</h3>
-          <div className="qm-chart-container">
-            <ResponsiveContainer width="100%" height={210}>
-              <AreaChart data={activityTimelineData}>
+          <div style={{ height: '260px', width: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={timelineData}>
                 <defs>
-                  <linearGradient id="purpleGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366F1" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#6366F1" stopOpacity={0.0} />
+                  <linearGradient id="colorAcc" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--neon-cyan)" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="var(--neon-cyan)" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                <XAxis dataKey="name" stroke="var(--text-muted)" tick={{ fontSize: 11 }} />
-                <YAxis stroke="var(--text-muted)" tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Area
-                  type="monotone"
-                  dataKey="solved"
-                  stroke="#6366F1"
-                  strokeWidth={2.5}
-                  fillOpacity={1}
-                  fill="url(#purpleGradient)"
+                <CartesianGrid strokeDasharray="3 3" stroke="#222" />
+                <XAxis dataKey="name" stroke="#666" style={{ fontSize: '10px', fontFamily: 'var(--font-pixel)' }} />
+                <YAxis domain={[0, 100]} stroke="#666" style={{ fontSize: '10px', fontFamily: 'var(--font-pixel)' }} />
+                <Tooltip
+                  contentStyle={{ background: '#000', border: '2px solid var(--neon-cyan)', borderRadius: '4px', fontFamily: 'var(--font-pixel)', fontSize: '10px' }}
                 />
+                <Area type="monotone" dataKey="accuracy" stroke="var(--neon-cyan)" strokeWidth={3} fillOpacity={1} fill="url(#colorAcc)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* CHART 2: SOLVED BY DIFFICULTY */}
-        <div className="qm-chart-card">
-          <h3 className="qm-chart-title">Solved by Difficulty</h3>
-          <div className="qm-donut-wrapper">
-            <ResponsiveContainer width="100%" height={160}>
-              <PieChart>
-                <Pie
-                  data={difficultyData}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={45}
-                  outerRadius={65}
-                  paddingAngle={3}
-                >
-                  {difficultyData.map((entry) => (
-                    <Cell key={entry.name} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-
-            <div className="qm-donut-legend">
-              <div className="legend-row">
-                <span className="dot green" />
-                <span>Easy · {easyCount}</span>
-              </div>
-              <div className="legend-row">
-                <span className="dot amber" />
-                <span>Medium · {medCount}</span>
-              </div>
-              <div className="legend-row">
-                <span className="dot red" />
-                <span>Hard · {hardCount}</span>
-              </div>
-            </div>
+        {/* DIFFICULTY TIERS BAR CHART */}
+        <div style={{ background: '#000000', border: '3px solid #000', borderRadius: 'var(--radius-xl)', padding: '24px', boxShadow: '6px 6px 0px #000' }}>
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: 'var(--neon-yellow)', marginBottom: '16px' }}>
+            RUNS BY DIFFICULTY TIER
           </div>
-        </div>
-
-        {/* CHART 3: SOLVED BY TOPIC */}
-        <div className="qm-chart-card">
-          <h3 className="qm-chart-title">Solved by Topic</h3>
-          <div className="qm-chart-container">
-            <ResponsiveContainer width="100%" height={210}>
-              <BarChart data={topicData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                <XAxis dataKey="name" stroke="var(--text-muted)" tick={{ fontSize: 11 }} />
-                <YAxis stroke="var(--text-muted)" tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                  {topicData.map((entry) => (
-                    <Cell key={entry.name} fill={entry.fill} />
+          <div style={{ height: '260px', width: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={difficultyData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#222" />
+                <XAxis dataKey="name" stroke="#666" style={{ fontSize: '9px', fontFamily: 'var(--font-pixel)' }} />
+                <YAxis stroke="#666" style={{ fontSize: '10px', fontFamily: 'var(--font-pixel)' }} />
+                <Tooltip
+                  contentStyle={{ background: '#000', border: '2px solid var(--neon-yellow)', borderRadius: '4px', fontFamily: 'var(--font-pixel)', fontSize: '10px' }}
+                />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {difficultyData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Bar>
               </BarChart>
@@ -208,60 +167,49 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* COMPLETED QUIZZES LOG */}
-      <div className="qm-card mt-6" style={{ padding: '1.5rem' }}>
-        <h3 className="qm-summary-title mb-3">Completed Quizzes History</h3>
-        {history.length > 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {history.map((h, idx) => (
-              <div
-                key={h.id || idx}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '0.85rem 1rem',
-                  background: 'var(--bg-app)',
-                  borderRadius: 'var(--radius-sm)',
-                  border: '1px solid var(--border-color)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span style={{ fontSize: '1.2rem' }}>🎯</span>
-                  <div>
-                    <strong style={{ fontSize: '0.95rem', color: 'var(--text-main)' }}>
-                      {h.topic} · {h.module}
-                    </strong>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', gap: '8px', marginTop: '2px' }}>
-                      <span style={{ textTransform: 'capitalize' }}>{h.difficulty} Tier</span>
-                      <span>•</span>
-                      <span>{h.date}</span>
-                    </div>
-                  </div>
-                </div>
+      {/* RECENT RUNS TABLE */}
+      <div style={{ background: '#000000', border: '3px solid #000', borderRadius: 'var(--radius-xl)', padding: '24px', boxShadow: '6px 6px 0px #000' }}>
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '11px', color: 'var(--neon-pink)', marginBottom: '16px', borderBottom: '1px solid #333', paddingBottom: '12px' }}>
+          COMPREHENSIVE RUN LOG
+        </div>
 
-                <div style={{ textAlign: 'right' }}>
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      padding: '0.25rem 0.65rem',
-                      borderRadius: 'var(--radius-full)',
-                      fontSize: '0.82rem',
-                      fontWeight: '700',
-                      background: 'var(--primary-light)',
-                      color: 'var(--primary-dark)',
-                    }}
-                  >
-                    {h.correct}/{h.total} ({h.percent || Math.round((h.correct / h.total) * 100)}%)
-                  </span>
-                </div>
-              </div>
-            ))}
+        {history.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '30px 0', color: 'var(--text-muted)' }}>
+            No history yet! Complete a quiz module to view session telemetry.
           </div>
         ) : (
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            No quizzes completed yet. Complete a quiz to view your historical analytics!
-          </p>
+          <table className="highscore-table">
+            <thead>
+              <tr>
+                <th>DATE</th>
+                <th>TOPIC</th>
+                <th>MODULE</th>
+                <th>TIER</th>
+                <th>ACCURACY</th>
+                <th>SCORE</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.map((h) => (
+                <tr key={h.id}>
+                  <td style={{ color: 'var(--text-muted)' }}>{h.date}</td>
+                  <td style={{ color: '#fff', fontWeight: 'bold' }}>{h.topic}</td>
+                  <td style={{ color: 'var(--text-secondary)' }}>{h.module}</td>
+                  <td>
+                    <span className="arcade-tag-chip" style={{ background: h.difficulty === 'hard' ? 'var(--neon-pink)' : h.difficulty === 'intermediate' ? 'var(--neon-yellow)' : 'var(--neon-green)', color: '#000', fontSize: '8px' }}>
+                      {h.difficulty.toUpperCase()}
+                    </span>
+                  </td>
+                  <td style={{ color: h.percent >= 70 ? 'var(--neon-green)' : 'var(--neon-pink)', fontWeight: 'bold' }}>
+                    {h.percent}%
+                  </td>
+                  <td style={{ color: 'var(--neon-yellow)' }}>
+                    {h.score || h.correct * 100} PTS
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>

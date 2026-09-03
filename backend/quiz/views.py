@@ -36,12 +36,13 @@ def register(request):
 
     # Use email as username (truncated to 150 chars)
     username = email[:150]
-    user = User.objects.create_user(username=username, email=email, password=password)
+    user = User(username=username, email=email)
+    user.set_password(password)  # Hashes password using Django's PBKDF2/SHA-256
     if name:
         parts = name.split(' ', 1)
         user.first_name = parts[0]
         user.last_name = parts[1] if len(parts) > 1 else ''
-        user.save(update_fields=['first_name', 'last_name'])
+    user.save()
 
     # Ensure profile exists
     profile, _ = UserProfile.objects.get_or_create(user=user)

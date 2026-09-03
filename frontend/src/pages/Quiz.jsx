@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import confetti from 'canvas-confetti'
 import {
@@ -17,34 +17,47 @@ import {
   Star,
   Zap,
   Trophy,
-  BookOpen
+  BookOpen,
+  Flag,
+  ChevronRight,
+  Flame,
+  Coins
 } from 'lucide-react'
 import { TOPIC_MODULES } from '../data/topicModules'
+import RetroIcon from '../components/RetroIcon'
 import api from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 import { recordQuizAttempt } from '../lib/userStats'
+import soundFx from '../lib/soundFx'
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D']
 
 export default function Quiz() {
   const { topicId, moduleId, difficulty: initialDiff } = useParams()
-  const { user } = useAuth()
+  const { user, addCoins } = useAuth()
   const navigate = useNavigate()
 
-  // State hooks always called unconditionally at the top level
   const [difficulty, setDifficulty] = useState(initialDiff || 'easy')
   const [currentIndex, setCurrentIndex] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState({}) // { [index]: choiceId }
-  const [seconds, setSeconds] = useState(15)
+  const [flaggedQuestions, setFlaggedQuestions] = useState({}) // { [index]: bool }
+  const [seconds, setSeconds] = useState(20)
   const [isCompleted, setIsCompleted] = useState(false)
+  const [combo, setCombo] = useState(0)
+  const [sessionPoints, setSessionPoints] = useState(0)
+  const [reviewMode, setReviewMode] = useState(false)
 
   // Synchronize state whenever route parameters change
   useEffect(() => {
     setDifficulty(initialDiff || 'easy')
     setCurrentIndex(0)
     setSelectedAnswers({})
-    setSeconds(15)
+    setFlaggedQuestions({})
+    setSeconds(20)
     setIsCompleted(false)
+    setCombo(0)
+    setSessionPoints(0)
+    setReviewMode(false)
   }, [topicId, moduleId, initialDiff])
 
   // Resolve topic and active module
@@ -77,251 +90,109 @@ export default function Quiz() {
 
   // Countdown timer
   useEffect(() => {
-    if (isCompleted || !topicId || !moduleId) return
+    if (isCompleted || !topicId || !moduleId || isAnswered) return
     const timer = setInterval(() => {
-      setSeconds((prev) => (prev > 0 ? prev - 1 : 0))
+      setSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer)
+          soundFx.playWrong()
+          return 0
+        }
+        if (prev <= 6) {
+          soundFx.playTick(true)
+        }
+        return prev - 1
+      })
     }, 1000)
     return () => clearInterval(timer)
-  }, [currentIndex, isCompleted, topicId, moduleId])
+  }, [currentIndex, isCompleted, topicId, moduleId, isAnswered])
 
-  const [searchParams] = useSearchParams()
-  const searchQuery = (searchParams.get('q') || '').toLowerCase().trim()
-  const [selectedHubTopic, setSelectedHubTopic] = useState('java')
-  const topicsBarRef = useState(null)[0]
+  // Answer handler
+  const handleSelectChoice = useCallback((choice) => {
+    if (isAnswered || isCompleted) return
 
-  const allTopicList = useMemo(() => Object.values(TOPIC_MODULES), [])
-
-  const filteredTopics = useMemo(() => {
-    if (!searchQuery) return allTopicList
-
-    return allTopicList
-      .map((topic) => {
-        const topicMatches =
-          topic.name.toLowerCase().includes(searchQuery) ||
-          topic.category.toLowerCase().includes(searchQuery) ||
-          topic.description.toLowerCase().includes(searchQuery)
-
-        const matchedModules = topic.modules.filter(
-          (m) =>
-            topicMatches ||
-            m.title.toLowerCase().includes(searchQuery) ||
-            (m.description && m.description.toLowerCase().includes(searchQuery))
-        )
-
-        if (matchedModules.length > 0) {
-          return {
-            ...topic,
-            modules: matchedModules,
-          }
-        }
-        return null
-      })
-      .filter(Boolean)
-  }, [allTopicList, searchQuery])
-
-  // Active topic object for the Hub
-  const activeHubTopic = useMemo(() => {
-    if (filteredTopics.length === 0) return null
-    const found = filteredTopics.find((t) => t.id === selectedHubTopic)
-    return found || filteredTopics[0]
-  }, [filteredTopics, selectedHubTopic])
-
-  const scrollTopics = (direction) => {
-    const el = document.getElementById('qm-topics-scroll-track')
-    if (el) {
-      el.scrollBy({
-        left: direction === 'left' ? -260 : 260,
-        behavior: 'smooth',
-      })
-    }
-  }
-
-  // If no topic/module is specified (i.e. user clicked "Quiz" in sidebar), show Interactive Module Selector Hub
-  if (!topicId || !moduleId) {
-    return (
-      <div className="qm-quiz-hub-page">
-        <div className="qm-page-welcome-header">
-          <h1>Select a Module to Start Quizzing</h1>
-          <p>
-            {searchQuery
-              ? `Showing modules matching "${searchQuery}"`
-              : 'Choose a subject topic below to view its learning modules and select your difficulty level.'}
-          </p>
-        </div>
-
-        {/* TOPIC SELECTION HORIZONTAL SCROLL CAROUSEL */}
-        <div className="qm-hub-carousel-wrapper">
-          <button
-            type="button"
-            className="qm-carousel-arrow left"
-            onClick={() => scrollTopics('left')}
-            title="Scroll Left"
-          >
-            ‹
-          </button>
-
-          <div className="qm-hub-topics-bar" id="qm-topics-scroll-track">
-            {filteredTopics.map((topic) => {
-              const isSelected = activeHubTopic?.id === topic.id
-              return (
-                <button
-                  key={topic.id}
-                  type="button"
-                  className={`qm-hub-topic-tab ${isSelected ? 'active' : ''}`}
-                  onClick={() => setSelectedHubTopic(topic.id)}
-                >
-                  <span className="qm-hub-tab-icon">{topic.icon}</span>
-                  <div className="qm-hub-tab-info">
-                    <span className="qm-hub-tab-name">{topic.name}</span>
-                    <span className="qm-hub-tab-badge">
-                      {topic.modules.length} {topic.modules.length === 1 ? 'Module' : 'Modules'}
-                    </span>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-
-          <button
-            type="button"
-            className="qm-carousel-arrow right"
-            onClick={() => scrollTopics('right')}
-            title="Scroll Right"
-          >
-            ›
-          </button>
-        </div>
-
-        {/* ACTIVE TOPIC MODULES GRID */}
-        {activeHubTopic ? (
-          <div className="qm-hub-active-topic-container">
-            <div className="qm-hub-topic-banner">
-              <div className="qm-hub-banner-left">
-                <div className="qm-hub-banner-icon-box">
-                  <span className="qm-hub-banner-icon">{activeHubTopic.icon}</span>
-                </div>
-                <div className="qm-hub-banner-text">
-                  <div className="qm-hub-meta-tags-row">
-                    <span className="qm-hub-badge-category">{activeHubTopic.category}</span>
-                    <span className="qm-hub-badge-modules">
-                      <Layers size={13} />
-                      <span>{activeHubTopic.modules.length} Learning Modules</span>
-                    </span>
-                    <span className="qm-hub-badge-questions">
-                      <BookOpen size={13} />
-                      <span>{activeHubTopic.modules.length * 60} Practice MCQs</span>
-                    </span>
-                  </div>
-                  <h2 className="qm-hub-banner-title">{activeHubTopic.name}</h2>
-                  <p className="qm-hub-banner-desc">{activeHubTopic.description}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="qm-hub-modules-grid">
-              {activeHubTopic.modules.map((m) => (
-                <div key={m.id} className="qm-hub-module-card">
-                  <div className="qm-hub-mod-top-row">
-                    <span className="qm-hub-mod-badge">MODULE {m.number}</span>
-                    <span className="qm-hub-mod-qcount">60 Questions Total</span>
-                  </div>
-
-                  <div className="qm-hub-mod-body">
-                    <h3 className="qm-hub-mod-title">{m.title}</h3>
-                    {m.description && <p className="qm-hub-mod-desc">{m.description}</p>}
-                  </div>
-
-                  <div className="qm-hub-mod-tiers-wrap">
-                    <span className="qm-hub-select-diff-label">Select Difficulty Tier:</span>
-                    <div className="qm-hub-tier-boxes-grid">
-                      <Link
-                        to={`/quiz/${activeHubTopic.id}/${m.id}/easy`}
-                        className="qm-hub-tier-box easy"
-                      >
-                        <div className="qm-tier-icon-title">
-                          <Star size={14} />
-                          <span>Easy</span>
-                        </div>
-                        <span className="qm-tier-qsubtitle">20 MCQs</span>
-                      </Link>
-
-                      <Link
-                        to={`/quiz/${activeHubTopic.id}/${m.id}/intermediate`}
-                        className="qm-hub-tier-box intermediate"
-                      >
-                        <div className="qm-tier-icon-title">
-                          <Zap size={14} />
-                          <span>Medium</span>
-                        </div>
-                        <span className="qm-tier-qsubtitle">20 MCQs</span>
-                      </Link>
-
-                      <Link
-                        to={`/quiz/${activeHubTopic.id}/${m.id}/hard`}
-                        className="qm-hub-tier-box hard"
-                      >
-                        <div className="qm-tier-icon-title">
-                          <Trophy size={14} />
-                          <span>Hard</span>
-                        </div>
-                        <span className="qm-tier-qsubtitle">20 MCQs</span>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ) : (
-          <div className="qm-card p-8 text-center flex flex-col items-center gap-3 mt-4">
-            <span className="text-3xl">🔍</span>
-            <h3 className="font-bold text-lg">No modules found</h3>
-            <p className="text-sm text-slate-500 max-w-md">
-              No topics or learning modules match <strong>"{searchQuery}"</strong>. Try searching for "Java", "Python", "Math", or "Data Structures".
-            </p>
-            <button
-              className="qm-btn-primary-sm"
-              onClick={() => navigate('/quiz')}
-            >
-              Clear Search
-            </button>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  const handleSelectChoice = (choiceId) => {
-    if (isAnswered) return
     setSelectedAnswers((prev) => ({
       ...prev,
-      [currentIndex]: choiceId,
+      [currentIndex]: choice.id,
+    }))
+
+    if (choice.is_correct) {
+      soundFx.playCorrect()
+      const newCombo = combo + 1
+      setCombo(newCombo)
+      if (newCombo >= 2) soundFx.playCombo(newCombo)
+
+      const multiplier = newCombo >= 3 ? 2 : newCombo >= 2 ? 1.5 : 1
+      const points = Math.round((100 + seconds * 5) * multiplier)
+      setSessionPoints((prev) => prev + points)
+    } else {
+      soundFx.playWrong()
+      setCombo(0)
+    }
+  }, [currentIndex, isAnswered, isCompleted, combo, seconds])
+
+  // Keyboard controls for retro feel (A/B/C/D or 1/2/3/4, Right arrow for next)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (isCompleted) return
+      const key = e.key.toUpperCase()
+
+      if (!isAnswered && currentQ.choices) {
+        if (key === 'A' || key === '1') handleSelectChoice(currentQ.choices[0])
+        else if (key === 'B' || key === '2') handleSelectChoice(currentQ.choices[1])
+        else if (key === 'C' || key === '3') handleSelectChoice(currentQ.choices[2])
+        else if (key === 'D' || key === '4') handleSelectChoice(currentQ.choices[3])
+      }
+
+      if (e.key === 'ArrowRight' || e.key === 'Enter') {
+        if (isAnswered) handleNext()
+      } else if (e.key === 'ArrowLeft') {
+        handlePrevious()
+      } else if (key === 'F') {
+        toggleFlag()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isAnswered, isCompleted, currentQ, handleSelectChoice])
+
+  const toggleFlag = () => {
+    soundFx.playSelect()
+    setFlaggedQuestions((prev) => ({
+      ...prev,
+      [currentIndex]: !prev[currentIndex],
     }))
   }
 
   const handleNext = () => {
+    soundFx.playSelect()
     if (currentIndex + 1 < questions.length) {
       setCurrentIndex((prev) => prev + 1)
-      setSeconds(15)
+      setSeconds(20)
     } else {
       handleFinish()
     }
   }
 
   const handlePrevious = () => {
+    soundFx.playSelect()
     if (currentIndex > 0) {
       setCurrentIndex((prev) => prev - 1)
-      setSeconds(15)
+      setSeconds(20)
     }
   }
 
   const handleFinish = () => {
     setIsCompleted(true)
+    soundFx.playVictory()
+
     try {
       confetti({
-        particleCount: 160,
-        spread: 80,
+        particleCount: 180,
+        spread: 90,
         origin: { y: 0.6 },
+        colors: ['#ff007f', '#00f0ff', '#ffe600', '#39ff14', '#9d4edd'],
       })
     } catch {}
 
@@ -333,8 +204,7 @@ export default function Quiz() {
       if (chosen?.is_correct) scoreCount++
     })
 
-    // Record to persistent local store & backend
-    recordQuizAttempt(
+    const attemptResult = recordQuizAttempt(
       topicData.name,
       activeModule ? activeModule.title : 'Module',
       difficulty,
@@ -342,14 +212,18 @@ export default function Quiz() {
       scoreCount,
       user?.id,
       topicData?.id,
-      activeModule?.id
+      activeModule?.id,
+      sessionPoints
     )
 
-    // Broadcast immediate update so Dashboard, Leaderboard & Analytics sync in real-time
+    if (attemptResult.coinsEarned && addCoins) {
+      addCoins(attemptResult.coinsEarned)
+    }
+
     window.dispatchEvent(new Event('quizmaster-stats-updated'))
     localStorage.removeItem('qm_leaderboard_cache')
 
-    if (user) {
+    if (user && !user.isGuest) {
       api.post('/quiz/submit/', {
         subtopic_id: 1,
         topic_name: topicData.name,
@@ -357,91 +231,220 @@ export default function Quiz() {
         difficulty,
         score: scoreCount,
         total_questions: questions.length,
-      }).then(() => {
-        window.dispatchEvent(new Event('quizmaster-stats-updated'))
       }).catch(() => {})
     }
   }
 
-  const handleDifficultyChange = (newDiff) => {
-    setDifficulty(newDiff)
-    setSelectedAnswers({})
-    setCurrentIndex(0)
-    setSeconds(15)
-    setIsCompleted(false)
-  }
-
-  // Calculate score
-  let scoreCount = 0
-  Object.entries(selectedAnswers).forEach(([idx, choiceId]) => {
-    const q = questions[Number(idx)]
-    const chosen = q?.choices?.find((c) => c.id === choiceId)
-    if (chosen?.is_correct) scoreCount++
-  })
-
-  const answeredCount = Object.keys(selectedAnswers).length
-  const accuracyPercent = answeredCount > 0 ? Math.round((scoreCount / answeredCount) * 100) : 0
-
   const formatTimer = (sec) => {
-    const s = sec < 10 ? `0${sec}` : `${sec}`
-    return `00:${s}`
+    const m = Math.floor(sec / 60)
+    const s = sec % 60
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
   }
 
-  if (isCompleted) {
-    const finalScore = scoreCount
-    const total = questions.length
-    const finalPercent = total > 0 ? Math.round((finalScore / total) * 100) : 100
+  // Calculate results
+  const finalScore = useMemo(() => {
+    let count = 0
+    Object.entries(selectedAnswers).forEach(([idx, choiceId]) => {
+      const q = questions[Number(idx)]
+      const chosen = q?.choices?.find((c) => c.id === choiceId)
+      if (chosen?.is_correct) count++
+    })
+    return count
+  }, [selectedAnswers, questions])
 
+  const finalPercent = questions.length > 0 ? Math.round((finalScore / questions.length) * 100) : 0
+
+  const rankBadge = useMemo(() => {
+    if (finalPercent >= 90) return { rank: 'S-RANK', label: 'RETRO MASTER 👑', color: 'var(--neon-yellow)' }
+    if (finalPercent >= 75) return { rank: 'A-RANK', label: 'ARCADE PRO ⚡', color: 'var(--neon-cyan)' }
+    if (finalPercent >= 60) return { rank: 'B-RANK', label: 'SOLID RUN 👾', color: 'var(--neon-green)' }
+    return { rank: 'C-RANK', label: 'INSERT COIN TO RETRY 🕹️', color: 'var(--neon-pink)' }
+  }, [finalPercent])
+
+  // IF NO TOPIC/MODULE SELECTED (SHOW ARCADE HUB)
+  const [searchParams] = useSearchParams()
+  const searchQuery = (searchParams.get('q') || '').toLowerCase().trim()
+  const [selectedHubTopic, setSelectedHubTopic] = useState('java')
+
+  const allTopicList = useMemo(() => Object.values(TOPIC_MODULES), [])
+  const filteredTopics = useMemo(() => {
+    if (!searchQuery) return allTopicList
+    return allTopicList.filter((topic) =>
+      topic.name.toLowerCase().includes(searchQuery) ||
+      topic.category.toLowerCase().includes(searchQuery)
+    )
+  }, [searchQuery, allTopicList])
+
+  const hubActiveTopic = TOPIC_MODULES[selectedHubTopic] || TOPIC_MODULES.java
+
+  if (!topicId || !moduleId) {
     return (
-      <div className="qm-quiz-page-container">
-        <div className="qm-quiz-result-card">
-          <div className="qm-result-badge-top">
-            <Award size={48} className="text-indigo" />
+      <div className="retro-quiz-container">
+        <div style={{ marginBottom: '28px' }}>
+          <div className="hero-tag-badge">
+            <span>🕹️</span>
+            <span>ARCADE CARTRIDGE SELECTOR</span>
           </div>
-          <h1>Module Quiz Completed!</h1>
-          <p className="qm-result-sub">
-            {topicData.name} · {activeModule ? activeModule.title : 'Module'} ({difficulty.toUpperCase()})
+          <h1 className="section-retro-title">CHOOSE YOUR CHALLENGE</h1>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '6px' }}>
+            Select a subject cartridge, pick a module, and start your 20-MCQ speed run!
           </p>
+        </div>
 
-          <div className="qm-score-big-wrap">
-            <span className="qm-score-num">{finalPercent}%</span>
-            <span className="qm-score-text">{finalScore} / {total} Questions Correct</span>
-          </div>
-
-          <div className="qm-result-stats-row">
-            <div className="qm-res-stat-box">
-              <span className="stat-value text-emerald">{finalScore}</span>
-              <span className="stat-name">Correct</span>
-            </div>
-            <div className="qm-res-stat-box">
-              <span className="stat-value text-rose">{total - finalScore}</span>
-              <span className="stat-name">Incorrect</span>
-            </div>
-            <div className="qm-res-stat-box">
-              <span className="stat-value text-indigo">{finalPercent}%</span>
-              <span className="stat-name">Accuracy</span>
-            </div>
-          </div>
-
-          <div className="qm-result-actions-row">
+        {/* TOPIC SELECTOR CHIPS */}
+        <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '14px', marginBottom: '24px' }}>
+          {filteredTopics.map((t) => (
             <button
-              className="qm-btn-outline-sm"
+              key={t.id}
               onClick={() => {
-                setSelectedAnswers({})
-                setCurrentIndex(0)
-                setSeconds(15)
-                setIsCompleted(false)
+                soundFx.playSelect()
+                setSelectedHubTopic(t.id)
+              }}
+              className="retro-tool-btn"
+              style={{
+                background: selectedHubTopic === t.id ? 'var(--neon-yellow)' : 'var(--bg-card)',
+                color: selectedHubTopic === t.id ? '#000' : 'var(--text-primary)',
+                borderColor: '#000',
+                padding: '10px 16px',
+                fontSize: '11px',
+                whiteSpace: 'nowrap',
               }}
             >
-              <RotateCcw size={16} />
-              <span>Retry Quiz</span>
+              <RetroIcon topicId={t.id} category={t.category} size="sm" badge={false} />
+              <span>{t.name}</span>
             </button>
-            <Link to={`/topic/${topicData.id}`} className="qm-btn-primary-sm">
-              <Layers size={16} />
-              <span>Back to Modules</span>
+          ))}
+        </div>
+
+        {/* MODULE CARDS FOR SELECTED TOPIC */}
+        <div className="quiz-hub-grid">
+          {hubActiveTopic.modules.map((m) => (
+            <div key={m.id} className="retro-cartridge-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span className="arcade-tag-chip">MODULE {m.number}</span>
+                <RetroIcon topicId={hubActiveTopic.id} category={hubActiveTopic.category} size="md" />
+              </div>
+
+              <h3 className="cartridge-title" style={{ fontSize: '18px' }}>{m.title}</h3>
+              <p className="cartridge-desc" style={{ marginBottom: '20px' }}>{m.description}</p>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <Link
+                  to={`/quiz/${hubActiveTopic.id}/${m.id}/easy`}
+                  className="btn-retro-secondary"
+                  style={{ flex: 1, minWidth: '75px', textAlign: 'center', justifyContent: 'center', padding: '10px 8px', fontSize: '9px' }}
+                  onClick={() => soundFx.playCoin()}
+                >
+                  EASY
+                </Link>
+                <Link
+                  to={`/quiz/${hubActiveTopic.id}/${m.id}/intermediate`}
+                  className="btn-retro-yellow"
+                  style={{ flex: 1.2, minWidth: '95px', textAlign: 'center', justifyContent: 'center', padding: '10px 8px', fontSize: '9px' }}
+                  onClick={() => soundFx.playCoin()}
+                >
+                  INTERMEDIATE
+                </Link>
+                <Link
+                  to={`/quiz/${hubActiveTopic.id}/${m.id}/hard`}
+                  className="btn-retro-primary"
+                  style={{ flex: 1, minWidth: '75px', textAlign: 'center', justifyContent: 'center', padding: '10px 8px', fontSize: '9px' }}
+                  onClick={() => soundFx.playCoin()}
+                >
+                  HARD 💀
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // STAGE CLEAR / GAME OVER SCREEN
+  if (isCompleted && !reviewMode) {
+    return (
+      <div className="retro-quiz-container">
+        <div className="stage-clear-modal">
+          <div style={{ fontSize: '48px', marginBottom: '8px' }}>🏆</div>
+          <h1 className="stage-clear-title">STAGE CLEAR!</h1>
+          <p style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-display)', fontSize: '16px' }}>
+            {topicData.name} • {activeModule.title} [{difficulty.toUpperCase()}]
+          </p>
+
+          <div className="rank-badge-stamp" style={{ borderColor: rankBadge.color, color: rankBadge.color }}>
+            {rankBadge.rank}
+          </div>
+
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '12px', color: rankBadge.color, marginBottom: '24px' }}>
+            {rankBadge.label}
+          </div>
+
+          <div className="stage-metrics-grid">
+            <div className="stage-metric-card">
+              <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>SCORE</div>
+              <div className="metric-val" style={{ color: 'var(--neon-yellow)' }}>{sessionPoints} PTS</div>
+            </div>
+            <div className="stage-metric-card">
+              <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>ACCURACY</div>
+              <div className="metric-val" style={{ color: 'var(--neon-cyan)' }}>
+                {finalPercent}% ({finalScore}/{questions.length})
+              </div>
+            </div>
+            <div className="stage-metric-card">
+              <div style={{ fontSize: '9px', color: 'var(--text-muted)' }}>COINS EARNED</div>
+              <div className="metric-val" style={{ color: 'var(--neon-green)' }}>
+                +{finalScore * 10 + (finalPercent === 100 ? 50 : 10)} 🪙
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setReviewMode(true)}
+              className="btn-retro-secondary"
+              style={{ fontSize: '10px' }}
+            >
+              <Lightbulb size={14} />
+              <span>REVIEW ANSWERS</span>
+            </button>
+
+            <button
+              onClick={() => {
+                soundFx.playCoin()
+                setSelectedAnswers({})
+                setFlaggedQuestions({})
+                setCurrentIndex(0)
+                setSeconds(20)
+                setIsCompleted(false)
+                setCombo(0)
+                setSessionPoints(0)
+              }}
+              className="btn-retro-yellow"
+              style={{ fontSize: '10px' }}
+            >
+              <RotateCcw size={14} />
+              <span>REPLAY RUN</span>
+            </button>
+
+            <Link
+              to={`/topic/${topicData.id}`}
+              className="btn-retro-outline"
+              style={{ fontSize: '10px' }}
+              onClick={() => soundFx.playSelect()}
+            >
+              <Layers size={14} />
+              <span>MODULES</span>
             </Link>
-            <Link to="/dashboard" className="qm-btn-outline-sm">
-              Dashboard
+
+            <Link
+              to="/dashboard"
+              className="btn-retro-primary"
+              style={{ fontSize: '10px' }}
+              onClick={() => soundFx.playSelect()}
+            >
+              <Trophy size={14} />
+              <span>DASHBOARD</span>
             </Link>
           </div>
         </div>
@@ -449,191 +452,228 @@ export default function Quiz() {
     )
   }
 
+  // ACTIVE RETRO QUIZ RUNNER
   return (
-    <div className="qm-quiz-page-container">
-      {/* TOP BAR */}
-      <div className="qm-quiz-session-topbar">
-        <button
-          className="qm-back-to-topics-btn"
-          onClick={() => navigate(`/topic/${topicData.id}`)}
-        >
-          <ArrowLeft size={18} />
-          <span>
-            {topicData.name} · {activeModule ? activeModule.title : 'Module'} <span className="qm-topbar-tier-tag">({difficulty.toUpperCase()})</span>
-          </span>
-        </button>
+    <div className="retro-quiz-container">
+      {/* ARCADE HUD HEADER */}
+      <div className="arcade-hud-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <button
+            onClick={() => {
+              soundFx.playSelect()
+              if (reviewMode) {
+                setReviewMode(false)
+              } else {
+                navigate(`/topic/${topicData.id}`)
+              }
+            }}
+            className={`retro-tool-btn ${reviewMode ? 'active' : ''}`}
+            title={reviewMode ? 'Exit preview' : 'Return to topic syllabus'}
+          >
+            <ArrowLeft size={14} />
+            <span>EXIT</span>
+          </button>
 
-        <div className="flex items-center gap-3">
-          <div className="qm-timer-pill">
-            <Clock size={15} />
-            <span>{formatTimer(seconds)}</span>
+          {reviewMode && (
+            <span className="arcade-tag-chip" style={{ background: 'var(--neon-cyan)', color: '#000' }}>
+              PREVIEW MODE
+            </span>
+          )}
+
+          <div className="hud-stat-box">
+            <span className="hud-label">1UP SCORE</span>
+            <span className="hud-val-yellow">{sessionPoints}</span>
           </div>
 
-          <Link to={`/topic/${topicData.id}`} className="qm-leave-quiz-btn">
-            Leave Quiz
-          </Link>
+          <div className="hud-stat-box">
+            <span className="hud-label">STAGE</span>
+            <span className="hud-val-cyan">{currentIndex + 1} / {questions.length}</span>
+          </div>
+        </div>
+
+        {/* MIDDLE: COMBO MULTIPLIER */}
+        {combo >= 2 && (
+          <div className="combo-multiplier-pill">
+            🔥 {combo}x STREAK COMBO!
+          </div>
+        )}
+
+        {/* RIGHT: TIMER & ACTIONS */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div className="hud-timer-wrap">
+            <Clock size={14} color="var(--neon-cyan)" />
+            <span className={`timer-digits ${seconds <= 5 ? 'urgent' : ''}`}>
+              {formatTimer(seconds)}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={toggleFlag}
+            className={`retro-tool-btn ${flaggedQuestions[currentIndex] ? 'active' : ''}`}
+            title="Flag question for review"
+          >
+            <Flag size={13} fill={flaggedQuestions[currentIndex] ? '#fff' : 'none'} />
+            <span>{flaggedQuestions[currentIndex] ? 'FLAGGED' : 'FLAG'}</span>
+          </button>
         </div>
       </div>
 
-      {/* MAIN QUIZ WORKSPACE */}
-      <div className="qm-quiz-layout-grid mt-4">
-        {/* LEFT QUESTION CARD */}
-        <div className="qm-quiz-question-card">
-          <div className="qm-question-header-row">
-            <span className="qm-qcount-pill">
-              Question {currentIndex + 1} of {questions.length}
-            </span>
-            <span className="qm-qtier-label">
-              {difficulty.toUpperCase()} TIER
-            </span>
+      {/* QUESTION CARD */}
+      <div className="arcade-question-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <div className="q-category-tag" style={{ gap: '10px' }}>
+            <RetroIcon topicId={topicData.id} category={topicData.category} size="sm" />
+            <span>{topicData.name} • {activeModule.title}</span>
           </div>
-
-          <h2 className="qm-question-text">{currentQ.text}</h2>
-
-          {/* CODE SNIPPET */}
-          {currentQ.code_snippet && (
-            <div className="qm-code-box">
-              <code>{currentQ.code_snippet}</code>
-            </div>
-          )}
-
-          <div className="qm-options-instructions">Select one option</div>
-
-          {/* OPTIONS LIST */}
-          <div className="qm-quiz-options-list">
-            {currentQ.choices?.map((choice, index) => {
-              const letter = OPTION_LETTERS[index] || 'A'
-              const isSelected = currentSelectedChoiceId === choice.id
-              const isCorrect = choice.is_correct
-
-              let btnClass = 'qm-choice-card-btn'
-              if (isAnswered) {
-                if (isCorrect) {
-                  btnClass += ' correct'
-                } else if (isSelected && !isCorrect) {
-                  btnClass += ' wrong'
-                } else {
-                  btnClass += ' dimmed'
-                }
-              }
-
-              return (
-                <button
-                  key={choice.id || index}
-                  type="button"
-                  className={btnClass}
-                  onClick={() => handleSelectChoice(choice.id)}
-                  disabled={isAnswered}
-                >
-                  <span className="qm-letter-badge">{letter}</span>
-                  <span className="qm-choice-label">{choice.text}</span>
-
-                  {isAnswered && isCorrect && (
-                    <div className="qm-choice-status-icon correct">
-                      <Check size={16} />
-                    </div>
-                  )}
-                  {isAnswered && isSelected && !isCorrect && (
-                    <div className="qm-choice-status-icon wrong">
-                      <X size={16} />
-                    </div>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* EXPLANATION NOTE */}
-          {isAnswered && currentQ.explanation && (
-            <div className="qm-explanation-bubble">
-              <strong>Explanation:</strong> {currentQ.explanation}
-            </div>
-          )}
-
-          {/* BOTTOM BUTTONS */}
-          <div className="qm-quiz-footer-nav">
-            <button
-              className="qm-btn-outline-prev"
-              onClick={handlePrevious}
-              disabled={currentIndex === 0}
-            >
-              Previous
-            </button>
-
-            <button className="qm-btn-primary-next" onClick={handleNext}>
-              {currentIndex + 1 < questions.length ? 'Next' : 'Finish Quiz'}
-            </button>
-          </div>
+          <span className="arcade-tag-chip" style={{ background: difficulty === 'hard' ? 'var(--neon-pink)' : difficulty === 'intermediate' ? 'var(--neon-yellow)' : 'var(--neon-green)', color: '#000' }}>
+            {difficulty.toUpperCase()} TIER
+          </span>
         </div>
 
-        {/* RIGHT SIDEBAR WIDGET */}
-        <div className="qm-quiz-sidebar-widgets">
-          {/* QUIZ INFO */}
-          <div className="qm-widget-card">
-            <h3 className="qm-widget-title">Quiz Info</h3>
-            <div className="qm-info-stat-row">
-              <span className="qm-info-label">Score</span>
-              <span className="qm-info-value">
-                {scoreCount} / {questions.length}
-              </span>
-            </div>
-            <div className="qm-info-stat-row">
-              <span className="qm-info-label">Accuracy</span>
-              <span className="qm-info-value">{accuracyPercent}%</span>
-            </div>
-          </div>
+        <h2 className="q-main-title">{currentQ.text}</h2>
 
-          {/* QUESTION NAVIGATOR */}
-          <div className="qm-widget-card">
-            <h3 className="qm-widget-title">Question Navigator</h3>
-            <div className="qm-navigator-grid">
-              {questions.map((_, i) => {
-                const answered = selectedAnswers[i] !== undefined
-                const isCurrent = currentIndex === i
+        {/* CODE SNIPPET (IF ANY) */}
+        {currentQ.code_snippet && (
+          <pre className="q-code-snippet">
+            <code>{currentQ.code_snippet}</code>
+          </pre>
+        )}
 
-                let navClass = 'qm-nav-num-btn'
-                if (isCurrent) navClass += ' current'
-                else if (answered) navClass += ' answered'
-                else navClass += ' unanswered'
+        {/* CHOICES GRID */}
+        <div className="arcade-choices-grid">
+          {currentQ.choices?.map((choice, idx) => {
+            const letter = OPTION_LETTERS[idx] || 'A'
+            const isSelected = currentSelectedChoiceId === choice.id
+            const isCorrect = choice.is_correct
 
-                return (
-                  <button
-                    key={i}
-                    className={navClass}
-                    onClick={() => setCurrentIndex(i)}
-                  >
-                    {i + 1}
-                  </button>
-                )
-              })}
+            let choiceStatus = ''
+            if (isAnswered) {
+              if (isCorrect) choiceStatus = 'correct'
+              else if (isSelected) choiceStatus = 'wrong'
+            } else if (isSelected) {
+              choiceStatus = 'selected'
+            }
+
+            return (
+              <button
+                key={choice.id || idx}
+                className={`arcade-choice-btn ${choiceStatus}`}
+                onClick={() => handleSelectChoice(choice)}
+                disabled={isAnswered}
+              >
+                <div className="choice-key-box">{letter}</div>
+                <div style={{ flex: 1 }}>{choice.text}</div>
+                {isAnswered && isCorrect && <Check size={18} color="#000" />}
+                {isAnswered && isSelected && !isCorrect && <X size={18} color="#fff" />}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* RETRO EXPLANATION (REVEALED AFTER ANSWERING) */}
+        {isAnswered && (
+          <div className="arcade-explanation-box">
+            <div className="explanation-header">
+              <Lightbulb size={14} />
+              <span>EXPLANATION // RETRO INTEL</span>
             </div>
-
-            <div className="qm-navigator-legend">
-              <div className="qm-legend-item">
-                <span className="legend-dot green" />
-                <span>Answered</span>
-              </div>
-              <div className="qm-legend-item">
-                <span className="legend-dot blue" />
-                <span>Current</span>
-              </div>
-              <div className="qm-legend-item">
-                <span className="legend-dot gray" />
-                <span>Unanswered</span>
-              </div>
-            </div>
-          </div>
-
-          {/* TIP CARD */}
-          <div className="qm-tip-card">
-            <div className="qm-tip-header">
-              <Lightbulb size={18} className="text-amber" />
-              <span>Tip</span>
-            </div>
-            <p>
-              Practice {difficulty} questions first, then level up to intermediate and hard!
+            <p className="explanation-body">
+              {currentQ.explanation || 'Reviewing concepts and deterministic logic reinforces long-term retention.'}
             </p>
           </div>
+        )}
+      </div>
+
+      {/* NAVIGATION CONTROLS */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <button
+          onClick={handlePrevious}
+          disabled={currentIndex === 0}
+          className="btn-retro-outline"
+          style={{ opacity: currentIndex === 0 ? 0.4 : 1, fontSize: '10px' }}
+        >
+          ← PREV
+        </button>
+
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '9px', color: 'var(--text-muted)' }}>
+          PRESS [A, B, C, D] OR [1, 2, 3, 4] • [ENTER] TO ADVANCE
+        </div>
+
+        {reviewMode ? (
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            {currentIndex + 1 < questions.length && (
+              <button
+                onClick={handleNext}
+                className="btn-retro-yellow"
+                style={{ fontSize: '10px' }}
+              >
+                <span>NEXT →</span>
+              </button>
+            )}
+            <button
+              onClick={() => {
+                soundFx.playSelect()
+                setReviewMode(false)
+              }}
+              className="btn-retro-primary"
+              style={{ fontSize: '10px' }}
+            >
+              <span>EXIT</span>
+            </button>
+          </div>
+        ) : currentIndex + 1 < questions.length ? (
+          <button
+            onClick={handleNext}
+            className="btn-retro-yellow"
+            style={{ fontSize: '10px' }}
+          >
+            <span>NEXT →</span>
+          </button>
+        ) : (
+          <button
+            onClick={handleFinish}
+            className="btn-retro-primary"
+            style={{ fontSize: '10px' }}
+          >
+            <span>SUBMIT RUN 🏆</span>
+          </button>
+        )}
+      </div>
+
+      {/* 20-QUESTION MATRIX GRID */}
+      <div style={{ background: '#000', border: '3px solid #000', borderRadius: 'var(--radius-lg)', padding: '16px' }}>
+        <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '9px', color: 'var(--neon-cyan)', marginBottom: '12px', textAlign: 'center' }}>
+          QUESTION MATRIX (1 — {questions.length})
+        </div>
+        <div className="quiz-matrix-bar">
+          {questions.map((_, i) => {
+            const chosenId = selectedAnswers[i]
+            const qObj = questions[i]
+            const isQAnswered = chosenId !== undefined
+            const isQCorrect = qObj?.choices?.find((c) => c.id === chosenId)?.is_correct
+
+            let matrixClass = 'matrix-btn'
+            if (i === currentIndex) matrixClass += ' current'
+            if (isQAnswered) {
+              matrixClass += isQCorrect ? ' answered-correct' : ' answered-wrong'
+            }
+
+            return (
+              <button
+                key={i}
+                className={matrixClass}
+                onClick={() => {
+                  soundFx.playSelect()
+                  setCurrentIndex(i)
+                  setSeconds(20)
+                }}
+                title={`Question ${i + 1}`}
+              >
+                {flaggedQuestions[i] ? '🚩' : i + 1}
+              </button>
+            )
+          })}
         </div>
       </div>
     </div>

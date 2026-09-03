@@ -1,141 +1,121 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react'
+import Navbar from '../components/Navbar'
+import RetroMarquee from '../components/RetroMarquee'
+import soundFx from '../lib/soundFx'
 
 const FAQ_ITEMS = [
   {
-    q: 'What is QuizClub (www.quizclub.in)?',
-    a: 'QuizClub is an interactive learning platform featuring thousands of curriculum-structured MCQs across Programming, Computer Science, Mathematics, Science, General Knowledge, and English.',
+    q: 'What is QuizClub Arcade?',
+    a: 'QuizClub Arcade is a colorful, retro-themed assessment and speed-running platform featuring over 60 subtopics and 1,200+ MCQs across Programming, Math, Science, Computer Science, GK, and English.',
   },
   {
-    q: 'How does the scoring and leaderboard work?',
-    a: 'You earn 10 points for every correct answer, 2 points for attempting a question, and 25 bonus points for completing a 20-question quiz module. Your streak increments daily when you complete at least one quiz.',
+    q: 'Can I access the arcade without logging in?',
+    a: 'No, access to the quiz arcade is strictly through authenticated login only. Creating an account is free and ensures your high scores, XP progression, and daily streaks are permanently recorded.',
   },
   {
-    q: 'Is QuizClub free to use?',
-    a: 'Yes! All learning modules, difficulty tiers, analytics, and leaderboard competitions are completely free for all registered users.',
+    q: 'How does the 8-bit sound engine work?',
+    a: 'All arcade sounds (coins, correct chimes, buzzers, and stage clear fanfares) are generated entirely in real-time using the browser\'s Web Audio API. It requires zero external audio files and can be toggled on/off anytime.',
   },
   {
-    q: 'How are the questions generated and balanced?',
-    a: 'Our questions are curated by domain and distributed using a deterministic balancing algorithm ensuring equal distribution (25%) across answer options (A, B, C, D) with in-depth technical explanations for every question.',
+    q: 'What is the CRT Monitor Filter?',
+    a: 'It simulates authentic 80s arcade monitor phosphors, subtle scanlines, and vignette edges. You can toggle it on or off from the top navigation bar or settings.',
   },
   {
-    q: 'Can I change my profile avatar and name?',
-    a: 'Yes. Visit your Profile page to customize your display name, choose from a collection of unique emojis avatars, update your bio, and select your preferred study topics.',
+    q: 'How does scoring and the streak multiplier work?',
+    a: 'Each correct answer awards 100 base points plus a speed timer bonus. Answering questions consecutively activates the COMBO Multiplier (up to 3x points!), and completing runs earns arcade coins.',
   },
   {
-    q: 'Why is my email address locked in the Profile?',
-    a: 'Email addresses are permanently bound to your user ID upon signup to protect account security, maintain consistent progress records, and prevent authentication conflicts.',
-  },
-  {
-    q: 'How do learning module completion badges work?',
-    a: 'When you submit a quiz, the system records your score and marks that difficulty tier as Completed on your Topics detail page so you can easily track which modules you have mastered.',
+    q: 'Are all 60+ topics and questions balanced?',
+    a: 'Yes. Answers are deterministically balanced across choices A, B, C, and D, with detailed technical explanations provided for every single question.',
   },
 ]
 
 export default function FAQ() {
   const [openIdx, setOpenIdx] = useState(0)
 
+  const toggle = (i) => {
+    soundFx.playSelect()
+    setOpenIdx(openIdx === i ? -1 : i)
+  }
+
   return (
     <div className="landing-page-root">
-      {/* NAVBAR */}
-      <header className="landing-navbar">
-        <div className="landing-nav-brand">
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none' }}>
-            <div className="qm-brand-logo">
-              <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
-                <rect width="28" height="28" rx="8" fill="#6366F1" />
-                <path d="M7 14L14 7L21 14L14 21L7 14Z" fill="white" fillOpacity="0.8" />
-                <path d="M14 7V21" stroke="#6366F1" strokeWidth="2" />
-                <path d="M7 14H21" stroke="#6366F1" strokeWidth="2" />
-              </svg>
-            </div>
-            <span className="landing-brand-name">QuizClub</span>
-          </Link>
-        </div>
+      <RetroMarquee />
+      <Navbar />
 
-        <nav className="landing-nav-links">
-          <Link to="/">Home</Link>
-          <Link to="/about">About</Link>
-          <Link to="/faq" className="active">FAQ</Link>
-          <Link to="/contact">Contact</Link>
-        </nav>
-
-        <div className="landing-nav-actions">
-          <Link to="/login" className="landing-btn-ghost">Log in</Link>
-          <Link to="/signup" className="landing-btn-primary">Sign up</Link>
-        </div>
-      </header>
-
-      {/* CONTENT */}
-      <main style={{ maxWidth: '850px', margin: '0 auto', padding: '3.5rem 2rem 5rem' }}>
-        <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: 'var(--primary)', textDecoration: 'none', marginBottom: '2rem', fontSize: '0.9rem', fontWeight: '600' }}>
-          <ArrowLeft size={16} /> Back to Home
+      <main style={{ maxWidth: '900px', margin: '0 auto', padding: '50px 24px 80px' }}>
+        <Link
+          to="/"
+          onClick={() => soundFx.playSelect()}
+          className="retro-tool-btn"
+          style={{ width: 'fit-content', marginBottom: '24px' }}
+        >
+          <ArrowLeft size={14} />
+          <span>← BACK TO HOME</span>
         </Link>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '1rem' }}>
-          <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: '#EEF2FF', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366F1' }}>
-            <HelpCircle size={24} />
-          </div>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '900', color: '#0F172A', letterSpacing: '-0.02em' }}>
-            Frequently Asked Questions
-          </h1>
+        <div className="hero-tag-badge">
+          <span>❓</span>
+          <span>ARCADE MANUAL &amp; FAQ</span>
         </div>
-        <p style={{ color: 'var(--text-muted)', fontSize: '1.05rem', marginBottom: '2.5rem' }}>
-          Everything you need to know about QuizClub, practice quizzes, scoring, and account management.
+
+        <h1 className="section-retro-title" style={{ fontSize: '42px', marginBottom: '16px' }}>
+          FREQUENTLY ASKED QUESTIONS
+        </h1>
+        <p style={{ fontSize: '16px', color: 'var(--text-secondary)', marginBottom: '36px' }}>
+          Everything you need to know about coin rewards, difficulty tiers, and gameplay mechanics.
         </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {FAQ_ITEMS.map((item, idx) => {
             const isOpen = openIdx === idx
             return (
               <div
                 key={idx}
-                className="qm-card"
                 style={{
-                  padding: '1.25rem 1.5rem',
-                  cursor: 'pointer',
-                  transition: 'border-color 0.2s',
-                  background: '#FFFFFF',
+                  background: 'var(--bg-card)',
+                  border: '3px solid #000',
+                  borderRadius: 'var(--radius-lg)',
+                  boxShadow: isOpen ? '5px 5px 0px var(--neon-cyan)' : '4px 4px 0px #000',
+                  overflow: 'hidden',
+                  transition: 'all 0.15s ease',
                 }}
-                onClick={() => setOpenIdx(isOpen ? -1 : idx)}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: '700', color: '#0F172A', margin: 0 }}>
-                    {item.q}
-                  </h3>
-                  <div style={{ color: '#6366F1', display: 'flex', alignItems: 'center' }}>
-                    {isOpen ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => toggle(idx)}
+                  style={{
+                    width: '100%',
+                    padding: '18px 24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: 'none',
+                    border: 'none',
+                    color: '#fff',
+                    fontFamily: 'var(--font-display)',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                  }}
+                >
+                  <span style={{ color: isOpen ? 'var(--neon-yellow)' : '#fff' }}>{item.q}</span>
+                  {isOpen ? <ChevronUp size={20} color="var(--neon-yellow)" /> : <ChevronDown size={20} color="#666" />}
+                </button>
 
                 {isOpen && (
-                  <p style={{ marginTop: '0.85rem', color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.6' }}>
+                  <div style={{ padding: '0 24px 20px', color: 'var(--text-secondary)', fontSize: '15px', lineHeight: '1.6', borderTop: '1px dashed #333', paddingTop: '14px' }}>
                     {item.a}
-                  </p>
+                  </div>
                 )}
               </div>
             )
           })}
         </div>
       </main>
-
-      {/* FOOTER */}
-      <footer className="landing-footer">
-        <div className="landing-footer-brand">
-          <span>⬡ QuizClub</span>
-          <span className="landing-footer-tagline">Learn. Quiz. Improve. Repeat. · www.quizclub.in</span>
-        </div>
-        <div className="landing-footer-links">
-          <Link to="/">Home</Link>
-          <Link to="/about">About</Link>
-          <Link to="/faq">FAQ</Link>
-          <Link to="/contact">Contact</Link>
-          <Link to="/privacy-policy">Privacy Policy</Link>
-          <Link to="/terms">Terms</Link>
-        </div>
-        <p className="landing-footer-copy">© 2026 QuizClub (www.quizclub.in). All rights reserved.</p>
-      </footer>
     </div>
   )
 }

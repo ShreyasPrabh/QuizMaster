@@ -8,20 +8,22 @@ export default function ProtectedRoute({ children }) {
     return (
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        height: '100vh', background: '#0f0f1a', color: '#6366f1', fontSize: '1.1rem',
-        gap: '12px', flexDirection: 'column'
+        height: '100vh', background: '#0b0c16', color: 'var(--neon-yellow)',
+        fontFamily: 'var(--font-pixel)', fontSize: '12px',
+        gap: '16px', flexDirection: 'column'
       }}>
         <div style={{
-          width: 40, height: 40, border: '3px solid #6366f1',
+          width: 44, height: 44, border: '4px solid var(--neon-pink)',
           borderTopColor: 'transparent', borderRadius: '50%',
           animation: 'spin 0.8s linear infinite'
         }} />
-        <span>Loading QuizMaster...</span>
+        <span>AUTHENTICATING PLAYER...</span>
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     )
   }
 
+  // Strict login only — no guest allowed
   if (!user) {
     return <Navigate to="/login" replace />
   }
