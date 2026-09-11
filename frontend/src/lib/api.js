@@ -7,7 +7,8 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('quiz-access-token')
 
-  if (token) {
+  // Only attach valid JWT tokens (must contain 3 parts separated by dots, not local mock tokens)
+  if (token && token.split('.').length === 3 && !token.startsWith('local-token-')) {
     config.headers.Authorization = `Bearer ${token}`
   }
 

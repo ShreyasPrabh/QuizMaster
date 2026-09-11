@@ -41,9 +41,12 @@ export default function Signup() {
     } catch (err) {
       const data = err?.response?.data
       const msg =
-        err?.message ||
         data?.error ||
-        (data && typeof data === 'object' ? Object.values(data).flat().join(' ') : null) ||
+        data?.detail ||
+        data?.message ||
+        (typeof data === 'string' && data.trim() ? data : null) ||
+        (data && typeof data === 'object' ? Object.values(data).flat().filter((v) => typeof v === 'string').join(' ') : null) ||
+        (err?.message && !/^Request failed with status code/i.test(err.message) ? err.message : null) ||
         'Could not create account. Please try again.'
       setError(msg)
     } finally {

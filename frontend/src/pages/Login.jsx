@@ -24,10 +24,14 @@ export default function Login() {
       await signIn(email, password)
       navigate('/dashboard')
     } catch (err) {
+      const data = err?.response?.data
       const msg =
-        err?.message ||
-        err?.response?.data?.detail ||
-        err?.response?.data?.error ||
+        data?.error ||
+        data?.detail ||
+        data?.message ||
+        (typeof data === 'string' && data.trim() ? data : null) ||
+        (data && typeof data === 'object' ? Object.values(data).flat().filter((v) => typeof v === 'string').join(' ') : null) ||
+        (err?.message && !/^Request failed with status code/i.test(err.message) ? err.message : null) ||
         'Invalid email or password. Please try again.'
       setError(msg)
     } finally {

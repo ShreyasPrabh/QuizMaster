@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowRight, Zap, Trophy, Play, CheckCircle2, Flame, Award, Layers, Sparkles } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -6,6 +6,8 @@ import Navbar from '../components/Navbar'
 import RetroMarquee from '../components/RetroMarquee'
 import RetroIcon from '../components/RetroIcon'
 import soundFx from '../lib/soundFx'
+import api from '../lib/api'
+import { getUserStats, getCleanAvatar } from '../lib/userStats'
 
 const SAMPLE_DEMO_QUESTIONS = [
   {
@@ -41,6 +43,44 @@ export default function Home() {
   const [selectedDemoChoice, setSelectedDemoChoice] = useState(null)
   const [demoScore, setDemoScore] = useState(100)
   const [demoStreak, setDemoStreak] = useState(1)
+  const [topLeaders, setTopLeaders] = useState([])
+
+  useEffect(() => {
+    async function loadLeaders() {
+      try {
+        const res = await api.get('/leaderboard/')
+        if (res.data?.leaderboard && Array.isArray(res.data.leaderboard)) {
+          setTopLeaders(res.data.leaderboard.slice(0, 5))
+        }
+      } catch {
+        try {
+          const raw = localStorage.getItem('quiz_registered_accounts')
+          if (raw) {
+            const accounts = JSON.parse(raw)
+            if (Array.isArray(accounts)) {
+              const localPlayers = accounts.map((acc, idx) => {
+                const stats = getUserStats(acc.id)
+                const pts = (stats.correct_solved || 0) * 100 + (stats.high_score || 0)
+                const medals = ['👑 1ST', '🥈 2ND', '🥉 3RD']
+                return {
+                  rank: idx + 1,
+                  name: acc.name || acc.email?.split('@')[0] || 'Player',
+                  avatar: getCleanAvatar(acc.avatar),
+                  streak: stats.current_streak || 0,
+                  accuracy: stats.accuracy || 0,
+                  points: pts,
+                  medal: idx < 3 ? medals[idx] : `${idx + 1}TH`,
+                }
+              })
+              localPlayers.sort((a, b) => b.points - a.points)
+              setTopLeaders(localPlayers.slice(0, 5))
+            }
+          }
+        } catch {}
+      }
+    }
+    loadLeaders()
+  }, [])
 
   const currentDemo = SAMPLE_DEMO_QUESTIONS[demoIndex]
 
@@ -349,40 +389,40 @@ export default function Home() {
             <tr>
               <th>RANK</th>
               <th>PLAYER TAG</th>
-              <th>FAV TOPIC</th>
               <th>STREAK</th>
+              <th>ACCURACY</th>
               <th>HIGH SCORE</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td className="rank-gold">👑 1ST</td>
-              <td>RETRO_NINJA_99</td>
-              <td>Python Fundamentals</td>
-              <td>18 🔥</td>
-              <td className="rank-gold">99,850 PTS</td>
-            </tr>
-            <tr>
-              <td className="rank-silver">🥈 2ND</td>
-              <td>CYBER_ARCHITECT</td>
-              <td>Algorithms &amp; Graphs</td>
-              <td>14 🔥</td>
-              <td className="rank-silver">94,200 PTS</td>
-            </tr>
-            <tr>
-              <td className="rank-bronze">🥉 3RD</td>
-              <td>PIXEL_VALKYRIE</td>
-              <td>Quantum Physics</td>
-              <td>11 🔥</td>
-              <td className="rank-bronze">88,750 PTS</td>
-            </tr>
-            <tr>
-              <td>4TH</td>
-              <td>SYNTH_HACKER</td>
-              <td>JavaScript ES6</td>
-              <td>9 🔥</td>
-              <td>82,100 PTS</td>
-            </tr>
+            {topLeaders.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>
+                  No scores logged yet. Start a quiz to claim the #1 spot!
+                </td>
+              </tr>
+            ) : (
+              topLeaders.map((player) => (
+                <tr key={player.rank + '-' + (player.id || player.name)}>
+                  <td style={{ fontFamily: 'var(--font-pixel)' }}>
+                    <span className={player.rank === 1 ? 'rank-gold' : player.rank === 2 ? 'rank-silver' : player.rank === 3 ? 'rank-bronze' : ''}>
+                      {player.medal}
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '18px' }}>{player.avatar}</span>
+                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 'bold' }}>{player.name}</span>
+                    </div>
+                  </td>
+                  <td style={{ color: 'var(--neon-pink)' }}>{player.streak} 🔥</td>
+                  <td style={{ color: 'var(--neon-green)' }}>{player.accuracy}%</td>
+                  <td className={player.rank === 1 ? 'rank-gold' : player.rank === 2 ? 'rank-silver' : player.rank === 3 ? 'rank-bronze' : ''} style={{ fontFamily: 'var(--font-pixel)' }}>
+                    {player.points.toLocaleString()} PTS
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </section>

@@ -18,10 +18,11 @@ import {
   RotateCcw
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { getUserStats, getQuizHistory, RETRO_ACHIEVEMENTS } from '../lib/userStats'
+import { getUserStats, getQuizHistory, RETRO_ACHIEVEMENTS, getCleanAvatar, isAchievementUnlocked } from '../lib/userStats'
 import { TOPIC_MODULES } from '../data/topicModules'
 import RetroIcon from '../components/RetroIcon'
 import soundFx from '../lib/soundFx'
+import api from '../lib/api'
 
 function getResolvedPreferredTopics() {
   const saved = localStorage.getItem('quizmaster-preferred-topics')
@@ -67,7 +68,37 @@ export default function Dashboard() {
     return () => window.removeEventListener('quizmaster-stats-updated', handleSync)
   }, [user])
 
-  const avatar = user?.avatar || (user?.id && localStorage.getItem(`quizmaster-avatar-${user.id}`)) || '👾'
+  useEffect(() => {
+    if (user && !user.isGuest && user.id) {
+      api
+        .get('/user/stats/')
+        .then((res) => {
+          if (res.data) {
+            const s = res.data
+            const dbStats = {
+              current_streak: s.current_streak || 0,
+              max_streak: s.max_streak || 0,
+              problems_solved: s.problems_solved || 0,
+              correct_solved: s.correct_solved || 0,
+              accuracy: s.accuracy || 0,
+              quizzes_completed: s.quizzes_completed || 0,
+              total_xp: s.total_xp || 0,
+              level: s.level || 1,
+              xp_in_level: s.xp_in_level || 0,
+              xp_needed: s.xp_needed || 200,
+              coins: s.coins || 100,
+              high_score: s.high_score || 0,
+            }
+            const key = `quizmaster_user_stats_${user.id}`
+            localStorage.setItem(key, JSON.stringify(dbStats))
+            setStats(dbStats)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [user])
+
+  const avatar = getCleanAvatar(user?.avatar || (user?.id && localStorage.getItem(`quizmaster-avatar-${user.id}`)))
   const playerName = user?.name || (user?.isGuest ? 'PLAYER 1' : 'RetroGamer')
 
   // Calculate XP percentage
@@ -328,12 +359,7 @@ export default function Dashboard() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {RETRO_ACHIEVEMENTS.map((ach) => {
-              const isUnlocked =
-                (ach.id === 'first_quiz' && stats.quizzes_completed > 0) ||
-                (ach.id === 'streak_3' && stats.current_streak >= 3) ||
-                (ach.id === 'solved_50' && stats.correct_solved >= 50) ||
-                (ach.id === 'level_5' && stats.level >= 5) ||
-                (ach.id === 'high_acc' && stats.accuracy >= 90 && stats.quizzes_completed > 0)
+              const isUnlocked = isAchievementUnlocked(ach.id, stats, history)
 
               return (
                 <div

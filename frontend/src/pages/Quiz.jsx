@@ -224,14 +224,30 @@ export default function Quiz() {
     localStorage.removeItem('qm_leaderboard_cache')
 
     if (user && !user.isGuest) {
-      api.post('/quiz/submit/', {
-        subtopic_id: 1,
-        topic_name: topicData.name,
-        module_title: activeModule ? activeModule.title : 'Module',
-        difficulty,
-        score: scoreCount,
-        total_questions: questions.length,
-      }).catch(() => {})
+      api
+        .post('/quiz/submit/', {
+          subtopic_id: 1,
+          topic_name: topicData.name,
+          module_title: activeModule ? activeModule.title : 'Module',
+          difficulty,
+          score: scoreCount,
+          total_questions: questions.length,
+        })
+        .then((res) => {
+          if (res.data) {
+            const statsKey = `quizmaster_user_stats_${user.id}`
+            const local = JSON.parse(localStorage.getItem(statsKey) || '{}')
+            const updated = {
+              ...local,
+              ...res.data,
+            }
+            localStorage.setItem(statsKey, JSON.stringify(updated))
+            window.dispatchEvent(new Event('quizmaster-stats-updated'))
+          }
+        })
+        .catch((err) => {
+          console.warn('Could not submit quiz stats to server:', err)
+        })
     }
   }
 

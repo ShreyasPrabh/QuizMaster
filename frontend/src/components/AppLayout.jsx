@@ -21,7 +21,7 @@ import { useAuth } from '../context/AuthContext'
 import RetroToolbar from './RetroToolbar'
 import RetroMarquee from './RetroMarquee'
 import soundFx from '../lib/soundFx'
-import { getUserStats } from '../lib/userStats'
+import { getUserStats, getCleanAvatar } from '../lib/userStats'
 
 const navLinks = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -72,20 +72,32 @@ export default function AppLayout() {
     }
   }
 
-  const notifications = [
+  const DEFAULT_NOTIFS = [
     { id: 1, title: 'Cabinet Online 🕹️', msg: 'Welcome to QuizClub Arcade v2.0!', time: 'Now' },
     { id: 2, title: 'High Scores Active 🏆', msg: 'Compete across 60+ cartridges to reach S-Rank.', time: '1m ago' },
     { id: 3, title: 'Combo Streak Power 🔥', msg: 'Chain correct answers to unlock 3x score multipliers.', time: '10m ago' },
   ]
 
-  const unreadNotifs = !localStorage.getItem('quizmaster_notifs_cleared')
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      if (localStorage.getItem('quizmaster_notifs_cleared') === 'true') {
+        return []
+      }
+      return DEFAULT_NOTIFS
+    } catch {
+      return DEFAULT_NOTIFS
+    }
+  })
+
+  const unreadNotifs = notifications.length > 0 && !localStorage.getItem('quizmaster_notifs_cleared')
 
   const handleClearNotifs = () => {
     soundFx.playSelect()
+    setNotifications([])
     localStorage.setItem('quizmaster_notifs_cleared', 'true')
   }
 
-  const avatar = user?.avatar || (user?.id && localStorage.getItem(`quizmaster-avatar-${user.id}`)) || '👾'
+  const avatar = getCleanAvatar(user?.avatar || (user?.id && localStorage.getItem(`quizmaster-avatar-${user.id}`)))
   const displayName = user?.name || 'Player 1'
 
   return (
@@ -208,6 +220,7 @@ export default function AppLayout() {
                 <button
                   type="button"
                   className="retro-tool-btn"
+                  style={{ position: 'relative' }}
                   onClick={() => {
                     soundFx.playSelect()
                     setNotifsOpen(!notifsOpen)
@@ -215,44 +228,114 @@ export default function AppLayout() {
                   title="Arcade Transmissions"
                 >
                   <Bell size={14} />
-                  {unreadNotifs && <span className="retro-notif-dot" />}
+                  {unreadNotifs && (
+                    <span
+                      className="retro-notif-dot"
+                      style={{
+                        position: 'absolute',
+                        top: '4px',
+                        right: '4px',
+                        width: '7px',
+                        height: '7px',
+                        borderRadius: '50%',
+                        background: 'var(--neon-pink)',
+                        border: '1px solid #000',
+                      }}
+                    />
+                  )}
                 </button>
 
-                {/* Notifications Drawer */}
+                {/* Notifications Popover (floating, does not push header items) */}
                 {notifsOpen && (
-                  <div className="retro-notifs-dropdown">
-                    <div className="notifs-header">
-                      <span>ARCADE DISPATCH</span>
-                      <button
-                        onClick={handleClearNotifs}
+                  <>
+                    <div
+                      onClick={() => setNotifsOpen(false)}
+                      style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+                    />
+                    <div
+                      className="retro-notifs-dropdown"
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 10px)',
+                        right: 0,
+                        width: '320px',
+                        background: '#000000',
+                        border: '3px solid var(--neon-cyan)',
+                        boxShadow: '6px 6px 0px var(--neon-cyan)',
+                        borderRadius: 'var(--radius-lg)',
+                        padding: '16px',
+                        zIndex: 1000,
+                        maxHeight: '420px',
+                        overflowY: 'auto',
+                      }}
+                    >
+                      <div
+                        className="notifs-header"
                         style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--neon-cyan)',
-                          cursor: 'pointer',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          paddingBottom: '10px',
+                          borderBottom: '2px dashed var(--neon-pink)',
+                          marginBottom: '12px',
                           fontFamily: 'var(--font-pixel)',
-                          fontSize: '8px',
+                          fontSize: '11px',
+                          color: 'var(--neon-yellow)',
                         }}
                       >
-                        CLEAR ALL
-                      </button>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      {notifications.map((n) => (
-                        <div key={n.id} className="notif-item">
-                          <div style={{ fontWeight: 'bold', color: 'var(--neon-yellow)', fontSize: '12px' }}>
-                            {n.title}
+                        <span>ARCADE DISPATCH</span>
+                        <button
+                          onClick={handleClearNotifs}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: 'var(--neon-cyan)',
+                            cursor: 'pointer',
+                            fontFamily: 'var(--font-pixel)',
+                            fontSize: '8px',
+                          }}
+                        >
+                          CLEAR ALL
+                        </button>
+                      </div>
+                      {notifications.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '28px 12px', color: 'var(--text-muted)' }}>
+                          <div style={{ fontSize: '28px', marginBottom: '8px' }}>📡</div>
+                          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: 'var(--neon-green)', marginBottom: '4px' }}>
+                            ALL CAUGHT UP
                           </div>
-                          <div style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px' }}>
-                            {n.msg}
-                          </div>
-                          <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                            {n.time}
+                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                            No active arcade transmissions.
                           </div>
                         </div>
-                      ))}
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                          {notifications.map((n) => (
+                            <div
+                              key={n.id}
+                              className="notif-item"
+                              style={{
+                                background: 'rgba(255, 255, 255, 0.04)',
+                                border: '1px solid #1e293b',
+                                borderRadius: '8px',
+                                padding: '10px 12px',
+                              }}
+                            >
+                              <div style={{ fontWeight: 'bold', color: 'var(--neon-yellow)', fontSize: '12px' }}>
+                                {n.title}
+                              </div>
+                              <div style={{ color: 'var(--text-secondary)', fontSize: '11px', marginTop: '2px', lineHeight: 1.4 }}>
+                                {n.msg}
+                              </div>
+                              <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                {n.time}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
             </div>

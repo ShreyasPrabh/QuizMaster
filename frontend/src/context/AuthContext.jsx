@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import api from '../lib/api'
 import soundFx from '../lib/soundFx'
+import { getCleanAvatar, DEFAULT_AVATAR } from '../lib/userStats'
 
 const AuthContext = createContext(null)
 
@@ -15,11 +16,16 @@ const ACCOUNTS_KEY = 'quiz_registered_accounts'
  */
 async function hashPassword(password) {
   if (!password) return ''
-  const enc = new TextEncoder()
-  const data = enc.encode('quizclub_arcade_salt_v1:' + password)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
+  try {
+    if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
+      const enc = new TextEncoder()
+      const data = enc.encode('quizclub_arcade_salt_v1:' + password)
+      const hashBuffer = await window.crypto.subtle.digest('SHA-256', data)
+      const hashArray = Array.from(new Uint8Array(hashBuffer))
+      return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
+    }
+  } catch {}
+  return 'local_h_' + btoa(encodeURIComponent(password))
 }
 
 export function AuthProvider({ children }) {
@@ -36,12 +42,16 @@ export function AuthProvider({ children }) {
       const saved = localStorage.getItem(USER_KEY)
       if (saved) {
         const parsed = JSON.parse(saved)
-        if (parsed.isGuest) {
-          localStorage.removeItem(TOKEN_KEY)
-          localStorage.removeItem(USER_KEY)
-          return null
+        if (parsed && typeof parsed === 'object') {
+          if (parsed.isGuest) {
+            localStorage.removeItem(TOKEN_KEY)
+            localStorage.removeItem(USER_KEY)
+            return null
+          }
+          const storedAv = parsed.id ? localStorage.getItem(`quizmaster-avatar-${parsed.id}`) : null
+          parsed.avatar = getCleanAvatar(storedAv || parsed.avatar)
+          return parsed
         }
-        return parsed
       }
       return null
     } catch {
@@ -57,12 +67,12 @@ export function AuthProvider({ children }) {
         const raw = localStorage.getItem(ACCOUNTS_KEY)
         if (!raw) return
         const accounts = JSON.parse(raw)
+        if (!Array.isArray(accounts)) return
         let modified = false
 
         for (let i = 0; i < accounts.length; i++) {
           const acc = accounts[i]
-          // If plain password exists, convert to secure hash and delete plain text
-          if (acc.password) {
+          if (acc && typeof acc === 'object' && acc.password) {
             acc.password_hash = await hashPassword(acc.password)
             delete acc.password
             modified = true
@@ -81,8 +91,13 @@ export function AuthProvider({ children }) {
     if (data.access) localStorage.setItem(TOKEN_KEY, data.access)
     if (data.refresh) localStorage.setItem(REFRESH_KEY, data.refresh)
     if (data.user) {
-      localStorage.setItem(USER_KEY, JSON.stringify(data.user))
-      setUser(data.user)
+      const storedAv = data.user.id ? localStorage.getItem(`quizmaster-avatar-${data.user.id}`) : null
+      const cleanUser = {
+        ...data.user,
+        avatar: getCleanAvatar(data.user.avatar || storedAv || DEFAULT_AVATAR),
+      }
+      localStorage.setItem(USER_KEY, JSON.stringify(cleanUser))
+      setUser(cleanUser)
     }
   }, [])
 
@@ -110,11 +125,14 @@ export function AuthProvider({ children }) {
               localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts))
             }
 
+            const storedAv = matched.id ? localStorage.getItem(`quizmaster-avatar-${matched.id}`) : null
+            const cleanAvatar = getCleanAvatar(matched.avatar || storedAv || DEFAULT_AVATAR)
+
             const loggedInUser = {
               id: matched.id,
               name: matched.name,
               email: matched.email,
-              avatar: matched.avatar || '👾',
+              avatar: cleanAvatar,
               coins: matched.coins || 100,
               level: 1,
             }
@@ -133,7 +151,7 @@ export function AuthProvider({ children }) {
             name: email.split('@')[0] || 'Player 1',
             email: email,
             password_hash: inputHash,
-            avatar: '👾',
+            avatar: DEFAULT_AVATAR,
             coins: 100,
             level: 1,
           }
@@ -172,7 +190,7 @@ export function AuthProvider({ children }) {
           name: name || email.split('@')[0] || 'Player 1',
           email: email,
           password_hash: password_hash,
-          avatar: '🕹️',
+          avatar: DEFAULT_AVATAR,
           coins: 150,
           level: 1,
         }
@@ -209,8 +227,13 @@ export function AuthProvider({ children }) {
       api.get('/auth/me/')
         .then((res) => {
           if (res.data?.user) {
-            setUser(res.data.user)
-            localStorage.setItem(USER_KEY, JSON.stringify(res.data.user))
+            const storedAv = res.data.user.id ? localStorage.getItem(`quizmaster-avatar-${res.data.user.id}`) : null
+            const cleanUser = {
+              ...res.data.user,
+              avatar: getCleanAvatar(storedAv || res.data.user.avatar),
+            }
+            setUser(cleanUser)
+            localStorage.setItem(USER_KEY, JSON.stringify(cleanUser))
           }
         })
         .catch(() => {
@@ -225,13 +248,52 @@ export function AuthProvider({ children }) {
     }
   }, [signOut])
 
-  const updateUser = useCallback((updatedFields) => {
+  const updateUser = useCallback(async (updatedFields) => {
+    let updatedUser = null
     setUser((prev) => {
       if (!prev) return prev
-      const updated = { ...prev, ...updatedFields }
-      localStorage.setItem(USER_KEY, JSON.stringify(updated))
-      return updated
+      const cleanFields = { ...updatedFields }
+      if ('avatar' in updatedFields) {
+        cleanFields.avatar = getCleanAvatar(updatedFields.avatar)
+        if (prev.id) {
+          localStorage.setItem(`quizmaster-avatar-${prev.id}`, cleanFields.avatar)
+        }
+        localStorage.setItem('quizmaster-avatar', cleanFields.avatar)
+      }
+      updatedUser = { ...prev, ...cleanFields }
+      localStorage.setItem(USER_KEY, JSON.stringify(updatedUser))
+      return updatedUser
     })
+
+    // Also update local registered accounts store if present
+    try {
+      const rawAccounts = localStorage.getItem(ACCOUNTS_KEY)
+      const currentUser = JSON.parse(localStorage.getItem(USER_KEY) || 'null')
+      if (rawAccounts && currentUser?.id) {
+        const accounts = JSON.parse(rawAccounts)
+        const idx = accounts.findIndex((a) => a.id === currentUser.id || a.email?.toLowerCase() === currentUser.email?.toLowerCase())
+        if (idx !== -1) {
+          const cleanAvatar = updatedFields.avatar ? getCleanAvatar(updatedFields.avatar) : accounts[idx].avatar
+          accounts[idx] = { ...accounts[idx], ...updatedFields, ...(updatedFields.avatar ? { avatar: cleanAvatar } : {}) }
+          localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts))
+        }
+      }
+    } catch (e) {
+      console.error('Failed to update local account store:', e)
+    }
+
+    // Sync to backend API if using real server token
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (token && !token.startsWith('local-token') && !token.startsWith('guest-token')) {
+      try {
+        await api.put('/quiz/profile/', updatedFields)
+      } catch (err) {
+        console.warn('Could not sync updated profile to backend API:', err)
+      }
+    }
+
+    window.dispatchEvent(new CustomEvent('quizmaster-avatar-updated', { detail: updatedUser }))
+    return updatedUser
   }, [])
 
   const addCoins = useCallback((amount) => {

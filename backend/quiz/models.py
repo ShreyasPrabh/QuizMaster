@@ -60,7 +60,7 @@ class Choice(models.Model):
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    avatar = models.CharField(max_length=255, default='micah')
+    avatar = models.CharField(max_length=255, default='👾')
     bio = models.TextField(blank=True)
     preferred_topics = models.ManyToManyField(Topic, blank=True)
     current_streak = models.IntegerField(default=0)

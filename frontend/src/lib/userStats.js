@@ -177,8 +177,8 @@ export function recordQuizAttempt(
       coins: coinsEarned,
       date: new Date().toLocaleDateString(),
     })
-    // Keep last 30
-    localStorage.setItem(histKey, JSON.stringify(history.slice(0, 30)))
+    // Keep only recent 10
+    localStorage.setItem(histKey, JSON.stringify(history.slice(0, 10)))
   } catch {}
 
   return {
@@ -197,12 +197,27 @@ export function getQuizHistory(userId) {
   }
 }
 
+export const DEFAULT_AVATAR = '👾'
+
+export function getCleanAvatar(avatar) {
+  if (!avatar || typeof avatar !== 'string') return DEFAULT_AVATAR
+  let trimmed = avatar.trim()
+  // If avatar has the cat-ninja combination (cat + human), keep only cat
+  if ((trimmed.includes('🐱') && trimmed.includes('👤')) || trimmed === '👤') {
+    return '🐱'
+  }
+  if (!trimmed || trimmed === 'micah' || trimmed === 'default' || trimmed.length > 8) {
+    return DEFAULT_AVATAR
+  }
+  return trimmed
+}
+
 export const RETRO_AVATARS = [
+  { id: 'alien_invader', emoji: '👾', name: '8-Bit Invader', rarity: 'Common (Default)' },
   { id: 'pixel_ninja', emoji: '🥷', name: 'Cyber Ninja', rarity: 'Legendary' },
-  { id: 'alien_invader', emoji: '👾', name: '8-Bit Invader', rarity: 'Common' },
   { id: 'retro_wizard', emoji: '🧙‍♂️', name: 'Code Mage', rarity: 'Rare' },
   { id: 'arcade_bot', emoji: '🤖', name: 'Mecha P1', rarity: 'Rare' },
-  { id: 'cyber_cat', emoji: '🐱‍👤', name: 'Matrix Neko', rarity: 'Epic' },
+  { id: 'cyber_cat', emoji: '🐱', name: 'Matrix Neko', rarity: 'Epic' },
   { id: 'astro_gamer', emoji: '👨‍🚀', name: 'Space Cadet', rarity: 'Common' },
   { id: 'skull_punk', emoji: '💀', name: 'Neon Glitch', rarity: 'Epic' },
   { id: 'joystick_hero', emoji: '🕹️', name: 'Retro Pilot', rarity: 'Common' },
@@ -220,3 +235,30 @@ export const RETRO_ACHIEVEMENTS = [
   { id: 'hard_tier', name: 'NIGHTMARE MODE', desc: 'Finish a Hard difficulty quiz', icon: '💀' },
   { id: 'level_5', name: 'ARCADE VETERAN', desc: 'Reach Player Level 5', icon: '👑' },
 ]
+
+export function isAchievementUnlocked(achId, stats = {}, history = []) {
+  if (!stats && (!history || history.length === 0)) return false
+  const s = stats || {}
+  const hist = Array.isArray(history) ? history : []
+
+  switch (achId) {
+    case 'first_quiz':
+      return (s.quizzes_completed || 0) > 0 || hist.length > 0
+    case 'high_acc':
+      return (
+        ((s.accuracy || 0) >= 90 && (s.quizzes_completed || 0) > 0) ||
+        hist.some((h) => (h.percent || 0) >= 100 || (h.score && h.total && h.score === h.total))
+      )
+    case 'streak_3':
+      return (s.current_streak || 0) >= 3 || (s.max_streak || 0) >= 3
+    case 'solved_50':
+      return (s.correct_solved || 0) >= 50 || (s.problems_solved || 0) >= 50
+    case 'hard_tier':
+      return hist.some((h) => String(h?.difficulty || '').toLowerCase() === 'hard')
+    case 'level_5':
+      return (s.level || 1) >= 5
+    default:
+      return false
+  }
+}
+

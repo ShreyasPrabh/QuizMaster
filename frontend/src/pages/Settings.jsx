@@ -1,49 +1,28 @@
 import { useState, useEffect } from 'react'
-import { Volume2, VolumeX, Tv, Palette, RotateCcw, Check, Save, Sparkles, AlertTriangle } from 'lucide-react'
+import { Volume2, VolumeX, Tv, Palette, Check, Save } from 'lucide-react'
 import soundFx from '../lib/soundFx'
-
-const THEMES = [
-  { id: 'arcade', label: 'Neon Arcade', desc: 'Electric pink & cyan glowing synthwave', class: 'retro-theme-arcade' },
-  { id: 'synthwave', label: 'Synthwave Sunset', desc: 'Deep violet gradient & glowing horizons', class: 'retro-theme-synthwave' },
-  { id: 'gameboy', label: 'Gameboy Nostalgia', desc: 'Authentic 4-shade green monochrome pixel vibe', class: 'retro-theme-gameboy' },
-]
+import { RETRO_THEMES, getRetroSettings, applyRetroSettings } from '../lib/settingsSync'
 
 export default function Settings() {
-  const [muted, setMuted] = useState(() => soundFx.isMuted())
-  const [crtOn, setCrtOn] = useState(() => localStorage.getItem('quiz_crt_active') === 'true')
-  const [selectedTheme, setSelectedTheme] = useState(() => {
-    const saved = localStorage.getItem('quiz_retro_theme') || 'arcade'
-    if (saved === 'memphis') {
-      localStorage.setItem('quiz_retro_theme', 'arcade')
-      return 'arcade'
-    }
-    return saved
-  })
+  const [settings, setSettings] = useState(() => getRetroSettings())
   const [savedSuccess, setSavedSuccess] = useState(false)
-  const [showResetConfirm, setShowResetConfirm] = useState(false)
 
-  // Sync CRT
+  // Synchronize in real time with toolbar, other tabs, or factory reset
   useEffect(() => {
-    if (crtOn) {
-      document.body.classList.add('crt-active')
-      localStorage.setItem('quiz_crt_active', 'true')
-    } else {
-      document.body.classList.remove('crt-active')
-      localStorage.setItem('quiz_crt_active', 'false')
+    const handleSync = () => {
+      setSettings(getRetroSettings())
     }
-  }, [crtOn])
-
-  // Sync Theme
-  useEffect(() => {
-    THEMES.forEach((t) => document.body.classList.remove(t.class))
-    const currentTheme = THEMES.find((t) => t.id === selectedTheme) || THEMES[0]
-    document.body.classList.add(currentTheme.class)
-    localStorage.setItem('quiz_retro_theme', selectedTheme)
-  }, [selectedTheme])
+    window.addEventListener('quizmaster-settings-updated', handleSync)
+    window.addEventListener('storage', handleSync)
+    return () => {
+      window.removeEventListener('quizmaster-settings-updated', handleSync)
+      window.removeEventListener('storage', handleSync)
+    }
+  }, [])
 
   const handleToggleSound = () => {
-    const nextMuted = soundFx.toggleMute()
-    setMuted(nextMuted)
+    const nextMuted = !settings.muted
+    applyRetroSettings({ muted: nextMuted })
     if (!nextMuted) soundFx.playCoin()
   }
 
@@ -51,20 +30,20 @@ export default function Settings() {
     soundFx.playVictory()
   }
 
+  const handleToggleCrt = () => {
+    soundFx.playSelect()
+    applyRetroSettings({ crtOn: !settings.crtOn })
+  }
+
+  const handleSelectTheme = (themeId) => {
+    soundFx.playSelect()
+    applyRetroSettings({ theme: themeId })
+  }
+
   const handleSave = () => {
     soundFx.playCoin()
     setSavedSuccess(true)
     setTimeout(() => setSavedSuccess(false), 2400)
-  }
-
-  const handleResetCabinet = () => {
-    soundFx.playWrong()
-    localStorage.removeItem('quizmaster_notifs_cleared')
-    localStorage.removeItem('quizmaster-preferred-topics')
-    localStorage.removeItem('qm_leaderboard_cache')
-    window.dispatchEvent(new Event('quizmaster-stats-updated'))
-    setShowResetConfirm(false)
-    alert('Arcade cabinet state reset to factory defaults!')
   }
 
   return (
@@ -98,20 +77,20 @@ export default function Settings() {
 
           <button
             onClick={handleToggleSound}
-            className={`btn-retro-${!muted ? 'yellow' : 'outline'}`}
+            className={`btn-retro-${!settings.muted ? 'yellow' : 'outline'}`}
             style={{ fontSize: '10px', padding: '8px 14px' }}
           >
-            {!muted ? <Volume2 size={14} /> : <VolumeX size={14} />}
-            <span>{!muted ? 'SFX ENABLED' : 'SFX MUTED'}</span>
+            {!settings.muted ? <Volume2 size={14} /> : <VolumeX size={14} />}
+            <span>{!settings.muted ? 'SFX ENABLED' : 'SFX MUTED'}</span>
           </button>
         </div>
 
         <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
           <button
             onClick={handleTestSound}
-            disabled={muted}
+            disabled={settings.muted}
             className="retro-tool-btn"
-            style={{ opacity: muted ? 0.4 : 1 }}
+            style={{ opacity: settings.muted ? 0.4 : 1 }}
           >
             <span>🎵 TEST STAGE CLEAR FANFARE</span>
           </button>
@@ -134,15 +113,12 @@ export default function Settings() {
           </div>
 
           <button
-            onClick={() => {
-              soundFx.playSelect()
-              setCrtOn(!crtOn)
-            }}
-            className={`btn-retro-${crtOn ? 'secondary' : 'outline'}`}
+            onClick={handleToggleCrt}
+            className={`btn-retro-${settings.crtOn ? 'secondary' : 'outline'}`}
             style={{ fontSize: '10px', padding: '8px 14px' }}
           >
             <Tv size={14} />
-            <span>{crtOn ? 'CRT FILTER ON' : 'CRT FILTER OFF'}</span>
+            <span>{settings.crtOn ? 'CRT FILTER ON' : 'CRT FILTER OFF'}</span>
           </button>
         </div>
       </div>
@@ -157,15 +133,12 @@ export default function Settings() {
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-          {THEMES.map((th) => {
-            const isSelected = selectedTheme === th.id
+          {RETRO_THEMES.map((th) => {
+            const isSelected = settings.theme === th.id
             return (
               <div
                 key={th.id}
-                onClick={() => {
-                  soundFx.playSelect()
-                  setSelectedTheme(th.id)
-                }}
+                onClick={() => handleSelectTheme(th.id)}
                 className="retro-cartridge-card"
                 style={{
                   cursor: 'pointer',
@@ -190,43 +163,17 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* SAVE OR FACTORY RESET */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <button onClick={handleSave} className="btn-retro-yellow">
-            <Save size={14} />
-            <span>SAVE PREFERENCES</span>
-          </button>
-          {savedSuccess && (
-            <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: 'var(--neon-green)' }}>
-              ✓ PREFERENCES SAVED!
-            </span>
-          )}
-        </div>
-
-        {/* FACTORY RESET */}
-        <div>
-          {!showResetConfirm ? (
-            <button
-              onClick={() => setShowResetConfirm(true)}
-              className="retro-tool-btn"
-              style={{ color: 'var(--neon-pink)', borderColor: 'var(--neon-pink)' }}
-            >
-              <AlertTriangle size={13} />
-              <span>FACTORY RESET CABINET</span>
-            </button>
-          ) : (
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', color: 'var(--neon-pink)' }}>Reset all cache?</span>
-              <button onClick={handleResetCabinet} className="btn-retro-primary" style={{ padding: '6px 10px', fontSize: '9px' }}>
-                YES, RESET
-              </button>
-              <button onClick={() => setShowResetConfirm(false)} className="btn-retro-outline" style={{ padding: '6px 10px', fontSize: '9px' }}>
-                CANCEL
-              </button>
-            </div>
-          )}
-        </div>
+      {/* SAVE PREFERENCES */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <button onClick={handleSave} className="btn-retro-yellow">
+          <Save size={14} />
+          <span>SAVE PREFERENCES</span>
+        </button>
+        {savedSuccess && (
+          <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '10px', color: 'var(--neon-green)' }}>
+            ✓ PREFERENCES SAVED!
+          </span>
+        )}
       </div>
     </div>
   )

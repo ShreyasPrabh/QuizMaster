@@ -2,65 +2,59 @@ import React, { useState, useEffect } from 'react'
 import soundFx from '../lib/soundFx'
 import { Volume2, VolumeX, Tv, Palette, Coins } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-
-const THEMES = [
-  { id: 'arcade', label: 'Neon Arcade', class: 'retro-theme-arcade' },
-  { id: 'synthwave', label: 'Synthwave', class: 'retro-theme-synthwave' },
-  { id: 'gameboy', label: 'Gameboy', class: 'retro-theme-gameboy' },
-]
+import { getUserStats } from '../lib/userStats'
+import { RETRO_THEMES, getRetroSettings, applyRetroSettings } from '../lib/settingsSync'
 
 export default function RetroToolbar({ showCoins = true }) {
   const { user } = useAuth()
-  const [muted, setMuted] = useState(() => soundFx.isMuted())
-  const [crtOn, setCrtOn] = useState(() => localStorage.getItem('quiz_crt_active') === 'true')
-  const [themeIdx, setThemeIdx] = useState(() => {
-    const saved = localStorage.getItem('quiz_retro_theme') || 'arcade'
-    if (saved === 'memphis') {
-      localStorage.setItem('quiz_retro_theme', 'arcade')
-      return 0
-    }
-    const idx = THEMES.findIndex((t) => t.id === saved)
-    return idx >= 0 ? idx : 0
-  })
+  const [stats, setStats] = useState(() => getUserStats(user?.id))
+  const [settings, setSettings] = useState(() => getRetroSettings())
 
-  // Apply CRT
+  // Keep stats / coins in sync
   useEffect(() => {
-    if (crtOn) {
-      document.body.classList.add('crt-active')
-      localStorage.setItem('quiz_crt_active', 'true')
-    } else {
-      document.body.classList.remove('crt-active')
-      localStorage.setItem('quiz_crt_active', 'false')
+    const handleStatsSync = () => {
+      setStats(getUserStats(user?.id))
     }
-  }, [crtOn])
+    window.addEventListener('quizmaster-stats-updated', handleStatsSync)
+    return () => window.removeEventListener('quizmaster-stats-updated', handleStatsSync)
+  }, [user?.id])
 
-  // Apply Theme
+  // Sync settings when changed anywhere (Settings page, toolbar, or factory reset)
   useEffect(() => {
-    THEMES.forEach((t) => document.body.classList.remove(t.class))
-    const currentTheme = THEMES[themeIdx]
-    document.body.classList.add(currentTheme.class)
-    localStorage.setItem('quiz_retro_theme', currentTheme.id)
-  }, [themeIdx])
+    const handleSettingsSync = () => {
+      setSettings(getRetroSettings())
+    }
+    window.addEventListener('quizmaster-settings-updated', handleSettingsSync)
+    window.addEventListener('storage', handleSettingsSync)
+    return () => {
+      window.removeEventListener('quizmaster-settings-updated', handleSettingsSync)
+      window.removeEventListener('storage', handleSettingsSync)
+    }
+  }, [])
 
   const handleToggleSound = () => {
-    const isNowMuted = soundFx.toggleMute()
-    setMuted(isNowMuted)
-    if (!isNowMuted) {
+    const nextMuted = !settings.muted
+    applyRetroSettings({ muted: nextMuted })
+    if (!nextMuted) {
       soundFx.playCoin()
     }
   }
 
   const handleToggleCrt = () => {
     soundFx.playSelect()
-    setCrtOn((prev) => !prev)
+    applyRetroSettings({ crtOn: !settings.crtOn })
   }
 
   const handleCycleTheme = () => {
     soundFx.playSelect()
-    setThemeIdx((prev) => (prev + 1) % THEMES.length)
+    const currentIdx = RETRO_THEMES.findIndex((t) => t.id === settings.theme)
+    const nextIdx = (currentIdx + 1) % RETRO_THEMES.length
+    const nextTheme = RETRO_THEMES[nextIdx]
+    applyRetroSettings({ theme: nextTheme.id })
   }
 
-  const userCoins = user?.coins ?? 100
+  const userCoins = stats?.coins ?? user?.coins ?? 100
+  const activeTheme = RETRO_THEMES.find((t) => t.id === settings.theme) || RETRO_THEMES[0]
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -73,22 +67,22 @@ export default function RetroToolbar({ showCoins = true }) {
 
       <button
         type="button"
-        className={`retro-tool-btn ${!muted ? 'active' : ''}`}
+        className={`retro-tool-btn ${!settings.muted ? 'active' : ''}`}
         onClick={handleToggleSound}
-        title={muted ? 'Unmute 8-Bit Audio' : 'Mute 8-Bit Audio'}
+        title={settings.muted ? 'Unmute 8-Bit Audio' : 'Mute 8-Bit Audio'}
       >
-        {!muted ? <Volume2 size={14} /> : <VolumeX size={14} />}
-        <span>{muted ? 'SFX OFF' : 'SFX ON'}</span>
+        {!settings.muted ? <Volume2 size={14} /> : <VolumeX size={14} />}
+        <span>{settings.muted ? 'SFX OFF' : 'SFX ON'}</span>
       </button>
 
       <button
         type="button"
-        className={`retro-tool-btn ${crtOn ? 'active' : ''}`}
+        className={`retro-tool-btn ${settings.crtOn ? 'active' : ''}`}
         onClick={handleToggleCrt}
         title="Toggle CRT Scanline Monitor Effect"
       >
         <Tv size={14} />
-        <span>{crtOn ? 'CRT ON' : 'CRT OFF'}</span>
+        <span>{settings.crtOn ? 'CRT ON' : 'CRT OFF'}</span>
       </button>
 
       <button
@@ -98,7 +92,7 @@ export default function RetroToolbar({ showCoins = true }) {
         title="Cycle Retro Theme"
       >
         <Palette size={14} />
-        <span>{THEMES[themeIdx].label}</span>
+        <span>{activeTheme.label}</span>
       </button>
     </div>
   )
