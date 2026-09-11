@@ -18,7 +18,7 @@ import {
   RotateCcw
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-import { getUserStats, getQuizHistory, RETRO_ACHIEVEMENTS, getCleanAvatar, isAchievementUnlocked } from '../lib/userStats'
+import { getUserStats, getQuizHistory, RETRO_ACHIEVEMENTS, getCleanAvatar, isAchievementUnlocked, getTopicCompletion, saveCompletedModules, getTotalStagesCleared } from '../lib/userStats'
 import { TOPIC_MODULES } from '../data/topicModules'
 import RetroIcon from '../components/RetroIcon'
 import soundFx from '../lib/soundFx'
@@ -88,6 +88,10 @@ export default function Dashboard() {
               xp_needed: s.xp_needed || 200,
               coins: s.coins || 100,
               high_score: s.high_score || 0,
+              total_score: s.total_score || 0,
+            }
+            if (s.completed_modules) {
+              saveCompletedModules(user.id, s.completed_modules)
             }
             const key = `quizmaster_user_stats_${user.id}`
             localStorage.setItem(key, JSON.stringify(dbStats))
@@ -141,6 +145,9 @@ export default function Dashboard() {
             </h1>
             <span className="arcade-tag-chip" style={{ background: 'var(--neon-yellow)' }}>
               PLAYER LEVEL {stats.level}
+            </span>
+            <span className="arcade-tag-chip" style={{ background: 'var(--neon-green)', color: '#000' }}>
+              💾 {getTotalStagesCleared(user?.id)} STAGES CLEARED
             </span>
             {user?.isGuest && (
               <span className="arcade-tag-chip" style={{ background: 'var(--neon-green)' }}>
@@ -224,14 +231,15 @@ export default function Dashboard() {
 
         <div className="retro-cartridge-card" style={{ padding: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '9px', color: 'var(--text-muted)' }}>HIGH SCORE</span>
-            <Trophy size={20} color="var(--neon-green)" />
+            <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '9px', color: 'var(--text-muted)' }}>TOTAL SCORE</span>
+            <Trophy size={20} color="var(--neon-yellow)" />
           </div>
-          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '24px', color: 'var(--neon-green)' }}>
-            {stats.high_score || 0} PTS
+          <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '24px', color: 'var(--neon-yellow)' }}>
+            {(stats.total_score || ((stats.correct_solved || 0) * 100) || stats.high_score || 0).toLocaleString()} PTS
           </div>
-          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            {stats.quizzes_completed || 0} runs completed
+          <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
+            <span>{stats.quizzes_completed || 0} runs completed</span>
+            <span style={{ color: 'var(--neon-green)', fontWeight: 'bold' }}>Best: {(stats.high_score || 0).toLocaleString()} PTS</span>
           </div>
         </div>
       </div>
@@ -256,31 +264,68 @@ export default function Dashboard() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-          {preferredTopics.map((pt, i) => (
-            <div
-              key={i}
-              className="retro-cartridge-card"
-              style={{ padding: '20px', cursor: 'pointer' }}
-              onClick={() => {
-                soundFx.playCoin()
-                navigate(`/topic/${pt.topicId}`)
-              }}
-            >
-              <div style={{ marginBottom: '14px' }}>
-                <RetroIcon topicId={pt.topicId} category={pt.category} size="lg" />
+          {preferredTopics.map((pt, i) => {
+            const topicObj = TOPIC_MODULES[pt.topicId] || TOPIC_MODULES[pt.topicId?.toLowerCase()]
+            const comp = getTopicCompletion(user?.id, topicObj || pt.topicId)
+            return (
+              <div
+                key={i}
+                className="retro-cartridge-card"
+                style={{ padding: '20px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
+                onClick={() => {
+                  soundFx.playCoin()
+                  navigate(`/topic/${pt.topicId}`)
+                }}
+              >
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                    <RetroIcon topicId={pt.topicId} category={pt.category} size="lg" />
+                    {comp.isMastered && (
+                      <span className="arcade-tag-chip" style={{ background: 'var(--neon-yellow)', color: '#000', fontSize: '7px' }}>
+                        ★ MASTERED
+                      </span>
+                    )}
+                  </div>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 'bold', color: '#fff' }}>
+                    {pt.name}
+                  </h3>
+                  <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '4px 0 14px' }}>
+                    {pt.category || 'Topic Domain'}
+                  </p>
+                </div>
+
+                <div>
+                  {/* COMPLETION PROGRESS */}
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '8px', fontFamily: 'var(--font-pixel)', marginBottom: '4px' }}>
+                      <span style={{ color: comp.isMastered ? 'var(--neon-yellow)' : 'var(--text-muted)' }}>
+                        {comp.isMastered ? '100% CLEARED' : `${comp.completedCount}/${comp.totalCount} CLEARED`}
+                      </span>
+                      <span style={{ color: comp.percent > 0 ? 'var(--neon-green)' : 'var(--text-muted)' }}>
+                        {comp.percent}%
+                      </span>
+                    </div>
+                    <div style={{ height: '4px', background: '#222', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div
+                        style={{
+                          height: '100%',
+                          width: `${comp.percent}%`,
+                          background: comp.isMastered ? 'var(--neon-yellow)' : 'var(--neon-green)',
+                          boxShadow: comp.percent > 0 ? '0 0 6px var(--neon-green)' : 'none',
+                          transition: 'width 0.3s ease',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--neon-cyan)', fontFamily: 'var(--font-pixel)', fontSize: '9px' }}>
+                    <span>{comp.percent > 0 ? 'CONTINUE' : 'START RUN'}</span>
+                    <ChevronRight size={12} />
+                  </div>
+                </div>
               </div>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 'bold', color: '#fff' }}>
-                {pt.name}
-              </h3>
-              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '4px 0 16px' }}>
-                {pt.category || 'Topic Domain'}
-              </p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--neon-cyan)', fontFamily: 'var(--font-pixel)', fontSize: '9px' }}>
-                <span>PLAY MODULES</span>
-                <ChevronRight size={12} />
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 

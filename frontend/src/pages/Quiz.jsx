@@ -27,7 +27,7 @@ import { TOPIC_MODULES } from '../data/topicModules'
 import RetroIcon from '../components/RetroIcon'
 import api from '../lib/api'
 import { useAuth } from '../context/AuthContext'
-import { recordQuizAttempt } from '../lib/userStats'
+import { recordQuizAttempt, saveCompletedModules } from '../lib/userStats'
 import soundFx from '../lib/soundFx'
 
 const OPTION_LETTERS = ['A', 'B', 'C', 'D']
@@ -226,8 +226,9 @@ export default function Quiz() {
     if (user && !user.isGuest) {
       api
         .post('/quiz/submit/', {
-          subtopic_id: 1,
-          topic_name: topicData.name,
+          topic_id: topicData?.id,
+          topic_name: topicData?.name,
+          module_id: activeModule?.id,
           module_title: activeModule ? activeModule.title : 'Module',
           difficulty,
           score: scoreCount,
@@ -242,6 +243,9 @@ export default function Quiz() {
               ...res.data,
             }
             localStorage.setItem(statsKey, JSON.stringify(updated))
+            if (res.data.completed_modules) {
+              saveCompletedModules(user.id, res.data.completed_modules)
+            }
             window.dispatchEvent(new Event('quizmaster-stats-updated'))
           }
         })

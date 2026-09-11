@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from django.contrib.auth import authenticate, get_user_model
-from django.db.models import Count, Sum, Q
+from django.db.models import Count, Sum, Q, Max
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
@@ -34,6 +34,8 @@ class SafeJWTAuthentication(JWTAuthentication):
                 return None
             raise
 
+from django.utils.text import slugify
+
 DEFAULT_AVATAR = '👾'
 
 def get_clean_avatar(avatar_val):
@@ -42,6 +44,51 @@ def get_clean_avatar(avatar_val):
     if ('🐱' in avatar_val and '👤' in avatar_val) or avatar_val == '👤':
         return '🐱'
     return avatar_val
+
+
+def get_user_completed_modules(user):
+    completed = {}
+    if not user or not user.is_authenticated:
+        return completed
+    sessions = QuizSession.objects.filter(user=user).select_related('subtopic', 'subtopic__topic')
+    for s in sessions:
+        if not s.subtopic or not s.subtopic.topic:
+            continue
+        t_name = s.subtopic.topic.name.lower()
+        t_slug = s.subtopic.topic.slug or slugify(s.subtopic.topic.name)
+        m_name = s.subtopic.name
+        m_slug = s.subtopic.slug or slugify(s.subtopic.name)
+        diff = (s.difficulty or 'intermediate').lower()
+        tot = s.total_questions if s.total_questions > 0 else max(s.score, 1)
+        pct = round((s.score / tot) * 100) if tot > 0 else 0
+        
+        entry = {
+            'score': s.score,
+            'total': tot,
+            'percent': pct,
+            'difficulty': diff,
+            'topic': s.subtopic.topic.name,
+            'module': m_name,
+            'date': s.start_time.strftime('%Y-%m-%d') if s.start_time else 'Today',
+        }
+        
+        # Register slugified, raw, and normalized keys so frontend lookup always hits
+        clean_t = ''.join(c for c in t_slug if c.isalnum())
+        clean_m = ''.join(c for c in m_slug if c.isalnum() or c == '-')
+        clean_m_name = ''.join(c for c in m_name.lower() if c.isalnum() or c in (' ', '-')).strip().replace(' ', '-')
+        keys_to_set = [
+            f"{t_slug}_{m_slug}_{diff}",
+            f"{clean_t}_{m_slug}_{diff}",
+            f"{t_slug}_{clean_m}_{diff}",
+            f"{clean_t}_{clean_m}_{diff}",
+            f"{t_slug}_{clean_m_name}_{diff}",
+            f"{clean_t}_{clean_m_name}_{diff}",
+            f"{t_slug}_{m_name.lower().replace(' ', '-')}_{diff}",
+        ]
+        for k in keys_to_set:
+            if k not in completed or pct >= completed[k]['percent']:
+                completed[k] = entry
+    return completed
 
 
 @api_view(['POST'])
@@ -205,37 +252,49 @@ def submit_quiz(request):
 
     # Ensure SubTopic exists in DB for this QuizSession
     subtopic = None
-    if subtopic_id:
+    topic_name = request.data.get('topic_name')
+    module_title = request.data.get('module_title')
+    topic_id = request.data.get('topic_id')
+    module_id = request.data.get('module_id')
+    if topic_name and module_title:
+        try:
+            topic, _ = Topic.objects.get_or_create(
+                name=topic_name,
+                defaults={'icon': 'BookOpen', 'description': topic_name, 'slug': (topic_id or slugify(topic_name))}
+            )
+            subtopic, _ = SubTopic.objects.get_or_create(
+                topic=topic,
+                name=module_title,
+                defaults={'description': module_title, 'slug': (module_id or slugify(f"{topic.name}-{module_title}"))}
+            )
+        except Exception:
+            subtopic = None
+    if not subtopic and subtopic_id:
         try:
             subtopic = SubTopic.objects.filter(pk=subtopic_id).first()
         except Exception:
             subtopic = None
-    if not subtopic and topic_name:
-        try:
-            topic, _ = Topic.objects.get_or_create(name=topic_name, defaults={'icon': 'BookOpen', 'description': topic_name})
-            subtopic, _ = SubTopic.objects.get_or_create(topic=topic, name=module_title, defaults={'description': module_title})
-        except Exception:
-            pass
     if not subtopic:
         subtopic = SubTopic.objects.first()
 
     session = None
     if subtopic:
         try:
+            if module_id and subtopic.slug != module_id:
+                subtopic.slug = module_id
+                subtopic.save(update_fields=['slug'])
+
+            diff_req = request.data.get('difficulty', 'intermediate')
+            diff_clean = str(diff_req).lower().strip() if diff_req else 'intermediate'
+            if diff_clean not in ('easy', 'intermediate', 'hard'):
+                diff_clean = 'intermediate'
             session = QuizSession.objects.create(
                 user=request.user,
                 subtopic=subtopic,
                 score=score,
                 total_questions=total_questions,
+                difficulty=diff_clean,
             )
-            # Keep only the most recent 10 sessions in database, delete older ones
-            excess_ids = list(
-                QuizSession.objects.filter(user=request.user)
-                .order_by('-start_time')
-                .values_list('id', flat=True)[10:]
-            )
-            if excess_ids:
-                QuizSession.objects.filter(id__in=excess_ids).delete()
         except Exception as e:
             print('Could not save QuizSession to DB:', e)
 
@@ -290,6 +349,13 @@ def submit_quiz(request):
     xp_in_level = total_xp % xp_needed
     coins = 100 + (usage_cor * 10) + (quizzes_completed * 20)
 
+    sessions_qs = QuizSession.objects.filter(user=request.user)
+    best_session = sessions_qs.order_by('-score').first()
+    high_score = (best_session.score * 100) if best_session else (score * 100)
+    total_session_score = sum([s.score * 100 for s in sessions_qs])
+    streak_bonus = (profile.current_streak or 0) * 25
+    total_score = max(total_session_score + streak_bonus, (usage_cor * 100) + streak_bonus)
+
     return Response({
         'score': score,
         'total_questions': total_questions,
@@ -304,6 +370,9 @@ def submit_quiz(request):
         'xp_in_level': xp_in_level,
         'xp_needed': xp_needed,
         'coins': coins,
+        'high_score': high_score,
+        'total_score': total_score,
+        'completed_modules': get_user_completed_modules(request.user),
         'session_id': session.id if session else None,
     }, status=status.HTTP_200_OK)
 
@@ -337,6 +406,9 @@ def user_stats(request):
 
     best_session = QuizSession.objects.filter(user=request.user).order_by('-score').first()
     high_score = (best_session.score * 100) if best_session else (usage_cor * 100)
+    total_session_score = sum([s.score * 100 for s in QuizSession.objects.filter(user=request.user)])
+    streak_bonus = (profile.current_streak or 0) * 25
+    total_score = max(total_session_score + streak_bonus, (usage_cor * 100) + streak_bonus)
 
     return Response({
         'username': request.user.username,
@@ -356,6 +428,8 @@ def user_stats(request):
         'xp_needed': xp_needed,
         'coins': coins,
         'high_score': high_score,
+        'total_score': total_score,
+        'completed_modules': get_user_completed_modules(request.user),
         'total_time_spent_seconds': profile.total_time_spent_seconds,
     })
 
@@ -374,11 +448,12 @@ def analytics(request):
         module_name = s.subtopic.name if s.subtopic else 'Quiz Module'
         tot = s.total_questions if s.total_questions > 0 else max(s.score, 10)
         pct = round((s.score / tot) * 100) if tot > 0 else 0
+        diff_val = getattr(s, 'difficulty', 'intermediate') or 'intermediate'
         sessions_data.append({
             'id': s.id,
             'topic': topic_name,
             'module': module_name,
-            'difficulty': 'intermediate',
+            'difficulty': diff_val.lower(),
             'total': tot,
             'correct': s.score,
             'percent': pct,
@@ -409,6 +484,12 @@ def analytics(request):
         else:
             difficulty_counts['intermediate'] += 1
 
+    best_session = QuizSession.objects.filter(user=request.user).order_by('-score').first()
+    high_score = (best_session.score * 100) if best_session else (usage_cor * 100)
+    total_session_score = sum([s['score'] for s in sessions_data])
+    streak_bonus = (profile.current_streak or 0) * 25
+    total_score = max(total_session_score + streak_bonus, (usage_cor * 100) + streak_bonus)
+
     return Response({
         'stats': {
             'problems_solved': total_solved,
@@ -421,9 +502,12 @@ def analytics(request):
             'level': level,
             'xp_in_level': xp_in_level,
             'xp_needed': 200,
+            'high_score': high_score,
+            'total_score': total_score,
         },
         'sessions': sessions_data,
         'difficulty_counts': difficulty_counts,
+        'completed_modules': get_user_completed_modules(request.user),
         'daily_activity': [
             {
                 'date': log.date.isoformat(),
@@ -477,6 +561,7 @@ def profile_update(request):
 @permission_classes([IsAuthenticatedOrReadOnly])
 def leaderboard_view(request):
     timeframe = request.GET.get('timeframe', 'all').lower()
+    sort_by = request.GET.get('sort_by', 'total').lower()
     profiles = UserProfile.objects.select_related('user').all().order_by('-problems_solved', '-current_streak')[:50]
     
     usage_map = {
@@ -486,6 +571,14 @@ def leaderboard_view(request):
             total_cor=Sum('questions_correct')
         )
     }
+
+    session_map = {}
+    for item in QuizSession.objects.values('user').annotate(
+        best_cor=Max('score'),
+        sum_cor=Sum('score'),
+        session_count=Count('id')
+    ):
+        session_map[item['user']] = item
 
     leaders = []
     medals = ['👑 1ST', '🥈 2ND', '🥉 3RD']
@@ -498,7 +591,13 @@ def leaderboard_view(request):
         att = usage['total_att'] if usage else 0
         cor = usage['total_cor'] if usage else 0
         accuracy = round((cor / att) * 100) if att > 0 else (100 if (p.problems_solved or 0) > 0 else 0)
-        points = (p.problems_solved or 0) * 100 + (p.current_streak or 0) * 25
+
+        s_info = session_map.get(p.user.id)
+        best_score = (s_info['best_cor'] * 100) if s_info and s_info['best_cor'] is not None else (cor * 100)
+        sum_session_score = (s_info['sum_cor'] * 100) if s_info and s_info['sum_cor'] is not None else (cor * 100)
+        
+        streak_bonus = (p.current_streak or 0) * 25
+        total_points = max(sum_session_score + streak_bonus, (cor * 100) + streak_bonus)
 
         leaders.append({
             'rank': idx + 1,
@@ -507,12 +606,18 @@ def leaderboard_view(request):
             'avatar': avatar_clean,
             'streak': p.current_streak or 0,
             'accuracy': accuracy,
-            'points': points,
+            'high_score': best_score,
+            'total_points': total_points,
+            'points': total_points,
             'medal': medals[idx] if idx < 3 else f"{idx + 1}TH",
             'isCurrentUser': is_me,
         })
 
-    leaders.sort(key=lambda x: (x['points'], x['streak']), reverse=True)
+    if sort_by == 'high_score':
+        leaders.sort(key=lambda x: (x['high_score'], x['total_points'], x['streak']), reverse=True)
+    else:
+        leaders.sort(key=lambda x: (x['total_points'], x['high_score'], x['streak']), reverse=True)
+
     for idx, l in enumerate(leaders):
         l['rank'] = idx + 1
         l['medal'] = medals[idx] if idx < 3 else f"{idx + 1}TH"

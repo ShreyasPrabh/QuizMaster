@@ -22,6 +22,7 @@ export default function Analytics() {
   const { user } = useAuth()
   const [stats, setStats] = useState(() => getUserStats(user?.id))
   const [history, setHistory] = useState(() => getQuizHistory(user?.id))
+  const [dbDifficultyCounts, setDbDifficultyCounts] = useState(null)
   const [loading, setLoading] = useState(false)
 
   // Fetch real telemetry and session history directly from database API
@@ -31,6 +32,9 @@ export default function Analytics() {
     try {
       const res = await api.get('/analytics/')
       if (res.data) {
+        if (res.data.difficulty_counts) {
+          setDbDifficultyCounts(res.data.difficulty_counts)
+        }
         if (res.data.stats) {
           setStats((prev) => ({
             ...prev,
@@ -67,13 +71,19 @@ export default function Analytics() {
   const uniqueTopics = new Set(history.map((h) => h.topic).filter(Boolean))
   const uniqueTopicsCount = uniqueTopics.size
 
-  // Real difficulty counts from actual run logs
-  const easyCount = history.filter((h) => String(h.difficulty || '').toLowerCase() === 'easy').length
-  const medCount = history.filter((h) => {
-    const d = String(h.difficulty || '').toLowerCase()
-    return d === 'intermediate' || d === 'medium'
-  }).length
-  const hardCount = history.filter((h) => String(h.difficulty || '').toLowerCase() === 'hard').length
+  // Real difficulty counts from actual run logs or backend
+  const easyCount = dbDifficultyCounts?.easy !== undefined
+    ? dbDifficultyCounts.easy
+    : history.filter((h) => String(h.difficulty || '').toLowerCase() === 'easy').length
+  const medCount = dbDifficultyCounts?.intermediate !== undefined
+    ? dbDifficultyCounts.intermediate
+    : history.filter((h) => {
+        const d = String(h.difficulty || '').toLowerCase()
+        return d === 'intermediate' || d === 'medium'
+      }).length
+  const hardCount = dbDifficultyCounts?.hard !== undefined
+    ? dbDifficultyCounts.hard
+    : history.filter((h) => String(h.difficulty || '').toLowerCase() === 'hard').length
 
   const difficultyData = [
     { name: 'EASY', count: easyCount, color: '#39ff14' },

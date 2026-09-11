@@ -40,6 +40,7 @@ export function getUserStats(userId) {
         xp_needed: 200,
         coins: parsed.coins ?? (correct * 10 + 50),
         high_score: parsed.high_score || 0,
+        total_score: parsed.total_score ?? ((correct * 100) + (parsed.current_streak || 0) * 25),
       }
     }
   } catch {}
@@ -58,6 +59,7 @@ export function getUserStats(userId) {
     xp_needed: 200,
     coins: 100,
     high_score: 0,
+    total_score: 0,
   }
 }
 
@@ -72,6 +74,142 @@ export function getCompletedModules(userId) {
   } catch {
     return {}
   }
+}
+
+export function saveCompletedModules(userId, newModules) {
+  try {
+    if (!newModules || typeof newModules !== 'object') return {}
+    const key = getCompletedModulesKey(userId)
+    const existing = JSON.parse(localStorage.getItem(key) || '{}')
+    const merged = { ...existing, ...newModules }
+    localStorage.setItem(key, JSON.stringify(merged))
+    window.dispatchEvent(new Event('quizmaster-stats-updated'))
+    return merged
+  } catch {
+    return {}
+  }
+}
+
+export function isStageCompleted(completed, topicId, moduleObj) {
+  if (!completed || !moduleObj) return false
+  const cleanTopic = (topicId || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+  const mId = moduleObj.id || ''
+  const mTitle = (moduleObj.title || '').toLowerCase()
+  const mSlug = mTitle.replace(/[^a-z0-9]/g, '-')
+
+  const difficulties = ['easy', 'intermediate', 'hard']
+  for (const diff of difficulties) {
+    if (completed[`${cleanTopic}_${mId}_${diff}`]) return true
+    if (completed[`${cleanTopic}_${mSlug}_${diff}`]) return true
+    if (completed[`${cleanTopic}_${cleanTopic}-m${moduleObj.number}_${diff}`]) return true
+  }
+
+  // Check in values if topic and module title match
+  return Object.values(completed).some((entry) => {
+    if (!entry) return false
+    const matchTopic = (entry.topic || '').toLowerCase().includes(cleanTopic)
+    const matchModule = (entry.module || '').toLowerCase() === mTitle ||
+      (entry.module || '').toLowerCase().includes(mTitle) ||
+      mTitle.includes((entry.module || '').toLowerCase())
+    return matchTopic && matchModule
+  })
+}
+
+export function getStageTierStats(completed, topicId, moduleObj, difficulty) {
+  if (!completed || !moduleObj) return null
+  const cleanTopic = (topicId || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+  const mId = moduleObj.id || ''
+  const mTitle = (moduleObj.title || '').toLowerCase()
+  const mSlug = mTitle.replace(/[^a-z0-9]/g, '-')
+  const diff = (difficulty || 'intermediate').toLowerCase()
+
+  const direct =
+    completed[`${cleanTopic}_${mId}_${diff}`] ||
+    completed[`${cleanTopic}_${cleanTopic}-m${moduleObj.number}_${diff}`] ||
+    completed[`${cleanTopic}_${mSlug}_${diff}`]
+  if (direct) return direct
+
+  // Check in dictionary values
+  const found = Object.values(completed).find((entry) => {
+    if (!entry || entry.difficulty !== diff) return false
+    const matchTopic = (entry.topic || '').toLowerCase().includes(cleanTopic)
+    const matchModule = (entry.module || '').toLowerCase() === mTitle ||
+      (entry.module || '').toLowerCase().includes(mTitle) ||
+      mTitle.includes((entry.module || '').toLowerCase())
+    return matchTopic && matchModule
+  })
+  return found || null
+}
+
+export function getTopicCompletion(userId, topicOrId, modules = []) {
+  const completed = getCompletedModules(userId)
+  const topicId = typeof topicOrId === 'string' ? topicOrId : (topicOrId?.id || '')
+  const cleanTopicId = (topicId || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+  
+  const moduleList = Array.isArray(modules) && modules.length > 0
+    ? modules
+    : (typeof topicOrId === 'object' && Array.isArray(topicOrId?.modules) ? topicOrId.modules : null)
+  
+  const totalCount = moduleList
+    ? moduleList.length
+    : (typeof modules === 'number' && modules > 0 ? modules : 5)
+  
+  let completedCount = 0
+  if (moduleList && moduleList.length > 0) {
+    moduleList.forEach((m) => {
+      if (isStageCompleted(completed, cleanTopicId, m)) {
+        completedCount++
+      }
+    })
+  } else {
+    for (let m = 1; m <= totalCount; m++) {
+      const easyTag = `${cleanTopicId}_${cleanTopicId}-m${m}_easy`
+      const medTag = `${cleanTopicId}_${cleanTopicId}-m${m}_intermediate`
+      const hardTag = `${cleanTopicId}_${cleanTopicId}-m${m}_hard`
+      if (completed[easyTag] || completed[medTag] || completed[hardTag]) {
+        completedCount++
+      }
+    }
+  }
+
+  // Fallback matching by prefix if module IDs vary
+  if (completedCount === 0 && Object.keys(completed).length > 0) {
+    const prefix = `${cleanTopicId}_`
+    const matchedModuleIds = new Set()
+    Object.keys(completed).forEach((key) => {
+      if (key.startsWith(prefix) || key.includes(`_${cleanTopicId}`)) {
+        const parts = key.split('_')
+        if (parts.length >= 2) {
+          matchedModuleIds.add(parts[1])
+        }
+      }
+    })
+    completedCount = Math.min(matchedModuleIds.size, totalCount)
+  }
+
+  const percent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+  return {
+    completedCount,
+    totalCount,
+    percent,
+    isMastered: percent === 100 && totalCount > 0,
+  }
+}
+
+export function getTotalStagesCleared(userId) {
+  const completed = getCompletedModules(userId)
+  const distinctStages = new Set()
+  Object.entries(completed).forEach(([key, entry]) => {
+    if (entry?.topic && entry?.module) {
+      distinctStages.add(`${entry.topic.toLowerCase()}_${entry.module.toLowerCase()}`)
+    } else {
+      const parts = key.split('_')
+      if (parts.length >= 2) {
+        distinctStages.add(`${parts[0]}_${parts[1]}`)
+      }
+    }
+  })
+  return distinctStages.size
 }
 
 export function recordQuizAttempt(
@@ -128,6 +266,7 @@ export function recordQuizAttempt(
   const newCoins = (currentStats.coins || 0) + coinsEarned
 
   const newHighScore = Math.max(currentStats.high_score || 0, sessionScore)
+  const newTotalScore = (currentStats.total_score || ((currentStats.correct_solved || 0) * 100)) + sessionScore
 
   const updatedStats = {
     current_streak: streak,
@@ -139,6 +278,7 @@ export function recordQuizAttempt(
     last_quiz_date: todayStr,
     coins: newCoins,
     high_score: newHighScore,
+    total_score: newTotalScore,
   }
 
   const statsKey = getStatsKey(userId)

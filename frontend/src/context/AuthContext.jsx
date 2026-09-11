@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import api from '../lib/api'
 import soundFx from '../lib/soundFx'
-import { getCleanAvatar, DEFAULT_AVATAR } from '../lib/userStats'
+import { getCleanAvatar, DEFAULT_AVATAR, saveCompletedModules } from '../lib/userStats'
 
 const AuthContext = createContext(null)
 
@@ -9,6 +9,21 @@ const TOKEN_KEY = 'quiz-access-token'
 const REFRESH_KEY = 'quiz-refresh-token'
 const USER_KEY = 'quiz-user'
 const ACCOUNTS_KEY = 'quiz_registered_accounts'
+
+const syncServerStats = (userId) => {
+  if (!userId) return
+  api.get('/user/stats/').then((sRes) => {
+    if (sRes.data) {
+      const statsKey = `quizmaster_user_stats_${userId}`
+      const local = JSON.parse(localStorage.getItem(statsKey) || '{}')
+      localStorage.setItem(statsKey, JSON.stringify({ ...local, ...sRes.data }))
+      if (sRes.data.completed_modules) {
+        saveCompletedModules(userId, sRes.data.completed_modules)
+      }
+      window.dispatchEvent(new Event('quizmaster-stats-updated'))
+    }
+  }).catch(() => {})
+}
 
 /**
  * Cryptographic SHA-256 password hasher using Web Crypto API.
@@ -98,6 +113,7 @@ export function AuthProvider({ children }) {
       }
       localStorage.setItem(USER_KEY, JSON.stringify(cleanUser))
       setUser(cleanUser)
+      syncServerStats(cleanUser.id)
     }
   }, [])
 
@@ -234,6 +250,7 @@ export function AuthProvider({ children }) {
             }
             setUser(cleanUser)
             localStorage.setItem(USER_KEY, JSON.stringify(cleanUser))
+            syncServerStats(cleanUser.id)
           }
         })
         .catch(() => {

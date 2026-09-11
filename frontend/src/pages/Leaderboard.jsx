@@ -11,6 +11,7 @@ const PAGE_SIZE = 10
 export default function Leaderboard() {
   const { user } = useAuth()
   const [timeframe, setTimeframe] = useState('All Time')
+  const [sortBy, setSortBy] = useState('total') // 'total' or 'high_score'
   const [apiPlayers, setApiPlayers] = useState([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
@@ -18,7 +19,6 @@ export default function Leaderboard() {
   const myStats = getUserStats(user?.id)
   const myAvatar = getCleanAvatar(user?.avatar || (user?.id && localStorage.getItem(`quizmaster-avatar-${user.id}`)))
   const myName = user?.name || (user?.isGuest ? 'PLAYER 1' : 'You')
-  const myPoints = (myStats.correct_solved || 0) * 100 + (myStats.high_score || 0)
 
   const [dbUserStats, setDbUserStats] = useState(null)
 
@@ -37,7 +37,7 @@ export default function Leaderboard() {
         }).catch(() => {})
       }
 
-      const res = await api.get(`/leaderboard/?timeframe=${timeframe.toLowerCase().replace(' ', '_')}`)
+      const res = await api.get(`/leaderboard/?timeframe=${timeframe.toLowerCase().replace(' ', '_')}&sort_by=${sortBy}`)
       if (res.data?.leaderboard && Array.isArray(res.data.leaderboard)) {
         setApiPlayers(res.data.leaderboard)
       } else {
@@ -52,13 +52,16 @@ export default function Leaderboard() {
           if (Array.isArray(accounts)) {
             const localPlayers = accounts.map((acc) => {
               const stats = getUserStats(acc.id)
-              const pts = (stats.problems_solved || 0) * 100 + (stats.current_streak || 0) * 25
+              const high = stats.high_score || 0
+              const pts = stats.total_score || ((stats.correct_solved || 0) * 100 + (stats.current_streak || 0) * 25)
               return {
                 id: acc.id,
                 name: acc.name || acc.email?.split('@')[0] || 'Player',
                 avatar: getCleanAvatar(acc.avatar),
                 streak: stats.current_streak || 0,
                 accuracy: stats.accuracy || 0,
+                high_score: high,
+                total_points: pts,
                 points: pts,
                 isCurrentUser: user?.id === acc.id,
               }
@@ -75,7 +78,7 @@ export default function Leaderboard() {
   useEffect(() => {
     fetchLeaderboard()
     setCurrentPage(1)
-  }, [timeframe])
+  }, [timeframe, sortBy])
 
   // Integrate current player and compute real leaderboard
   const fullLeaderboard = useMemo(() => {
@@ -90,9 +93,11 @@ export default function Leaderboard() {
       )
 
       const activeStreak = dbUserStats?.current_streak ?? myStats.current_streak ?? 0
-      const activeProblems = dbUserStats?.problems_solved ?? myStats.problems_solved ?? 0
+      const activeCorrect = dbUserStats?.correct_solved ?? myStats.correct_solved ?? 0
       const activeAcc = dbUserStats?.accuracy ?? myStats.accuracy ?? 0
-      const computedMyPoints = (activeProblems * 100) + (activeStreak * 25)
+      const activeHighScore = dbUserStats?.high_score ?? myStats.high_score ?? 0
+      const activeTotalScore = dbUserStats?.total_score ?? myStats.total_score ?? ((activeCorrect * 100) + (activeStreak * 25))
+      const computedMyPoints = activeTotalScore
 
       if (userIndex !== -1) {
         list[userIndex] = {
@@ -100,6 +105,8 @@ export default function Leaderboard() {
           name: `${user.name || myName} (YOU)`,
           avatar: myAvatar,
           streak: Math.max(list[userIndex].streak || 0, activeStreak),
+          high_score: Math.max(list[userIndex].high_score || 0, activeHighScore),
+          total_points: Math.max(list[userIndex].total_points || 0, computedMyPoints),
           points: Math.max(list[userIndex].points || 0, computedMyPoints),
           accuracy: list[userIndex].accuracy || activeAcc,
           isCurrentUser: true,
@@ -110,6 +117,8 @@ export default function Leaderboard() {
           name: `${myName} (YOU)`,
           avatar: myAvatar,
           streak: activeStreak,
+          high_score: activeHighScore,
+          total_points: computedMyPoints,
           points: computedMyPoints,
           accuracy: activeAcc,
           isCurrentUser: true,
@@ -117,11 +126,23 @@ export default function Leaderboard() {
       }
     }
 
-    // Sort strictly by points descending, then streak descending
+    // Sort by selected mode: high_score or total_points
     list.sort((a, b) => {
-      const ptsA = Number(a.points) || 0
-      const ptsB = Number(b.points) || 0
-      if (ptsB !== ptsA) return ptsB - ptsA
+      if (sortBy === 'high_score') {
+        const hA = Number(a.high_score) || 0
+        const hB = Number(b.high_score) || 0
+        if (hB !== hA) return hB - hA
+        const ptsA = Number(a.total_points ?? a.points) || 0
+        const ptsB = Number(b.total_points ?? b.points) || 0
+        if (ptsB !== ptsA) return ptsB - ptsA
+      } else {
+        const ptsA = Number(a.total_points ?? a.points) || 0
+        const ptsB = Number(b.total_points ?? b.points) || 0
+        if (ptsB !== ptsA) return ptsB - ptsA
+        const hA = Number(a.high_score) || 0
+        const hB = Number(b.high_score) || 0
+        if (hB !== hA) return hB - hA
+      }
       return (Number(b.streak) || 0) - (Number(a.streak) || 0)
     })
 
@@ -131,7 +152,7 @@ export default function Leaderboard() {
       rank: idx + 1,
       medal: idx < 3 ? medals[idx] : `${idx + 1}TH`,
     }))
-  }, [apiPlayers, user, myName, myAvatar, myStats, dbUserStats])
+  }, [apiPlayers, user, myName, myAvatar, myStats, dbUserStats, sortBy])
 
   // Top 3 Podium players (from page 1 / global)
   const top1 = fullLeaderboard[0] || null
@@ -169,8 +190,8 @@ export default function Leaderboard() {
           </p>
         </div>
 
-        {/* TIMEFRAME TOGGLES */}
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        {/* TIMEFRAME & SORT TOGGLES */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
           <button
             onClick={() => {
               soundFx.playSelect()
@@ -191,6 +212,49 @@ export default function Leaderboard() {
           >
             <RefreshCw size={12} className={loading ? 'spin-anim' : ''} />
           </button>
+
+          {/* SORT MODE TOGGLE */}
+          <div style={{ display: 'flex', gap: '2px', background: 'var(--bg-card)', padding: '2px', borderRadius: 'var(--radius-sm)', border: '2px solid #000' }}>
+            <button
+              onClick={() => {
+                soundFx.playSelect()
+                setSortBy('total')
+              }}
+              style={{
+                background: sortBy === 'total' ? 'var(--neon-yellow)' : 'transparent',
+                color: sortBy === 'total' ? '#000' : 'var(--text-muted)',
+                border: 'none',
+                fontFamily: 'var(--font-pixel)',
+                fontSize: '8px',
+                padding: '6px 10px',
+                cursor: 'pointer',
+                borderRadius: '2px',
+                fontWeight: 'bold',
+              }}
+            >
+              ⭐ TOTAL PTS
+            </button>
+            <button
+              onClick={() => {
+                soundFx.playSelect()
+                setSortBy('high_score')
+              }}
+              style={{
+                background: sortBy === 'high_score' ? 'var(--neon-green)' : 'transparent',
+                color: sortBy === 'high_score' ? '#000' : 'var(--text-muted)',
+                border: 'none',
+                fontFamily: 'var(--font-pixel)',
+                fontSize: '8px',
+                padding: '6px 10px',
+                cursor: 'pointer',
+                borderRadius: '2px',
+                fontWeight: 'bold',
+              }}
+            >
+              🏆 HIGH SCORE
+            </button>
+          </div>
+
           {['All Time', 'This Week', 'Today'].map((t) => (
             <button
               key={t}
@@ -200,7 +264,7 @@ export default function Leaderboard() {
               }}
               className="retro-tool-btn"
               style={{
-                background: timeframe === t ? 'var(--neon-yellow)' : 'var(--bg-card)',
+                background: timeframe === t ? 'var(--neon-cyan)' : 'var(--bg-card)',
                 color: timeframe === t ? '#000' : '#fff',
                 borderColor: '#000',
                 padding: '8px 14px',
@@ -255,7 +319,7 @@ export default function Leaderboard() {
                 </span>
               </div>
               <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '3px' }}>
-                {myRankEntry.name} • {(myRankEntry.points || 0).toLocaleString()} PTS
+                {myRankEntry.name} • Best: {(myRankEntry.high_score || 0).toLocaleString()} PTS • Total: {(myRankEntry.total_points || myRankEntry.points || 0).toLocaleString()} PTS
               </div>
             </div>
           </div>
@@ -263,8 +327,8 @@ export default function Leaderboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', gap: '12px', fontFamily: 'var(--font-pixel)', fontSize: '10px' }}>
               <span style={{ color: 'var(--neon-pink)' }}>{myRankEntry.streak} 🔥 STREAK</span>
-              <span style={{ color: 'var(--neon-green)' }}>{myRankEntry.accuracy}% ACC</span>
-              <span style={{ color: 'var(--neon-yellow)' }}>{(myRankEntry.points || 0).toLocaleString()} PTS</span>
+              <span style={{ color: 'var(--neon-green)' }}>🏆 {(myRankEntry.high_score || 0).toLocaleString()} BEST</span>
+              <span style={{ color: 'var(--neon-yellow)' }}>⭐ {(myRankEntry.total_points || myRankEntry.points || 0).toLocaleString()} TOTAL</span>
             </div>
 
             {!isMyRankOnCurrentPage && (
@@ -350,8 +414,13 @@ export default function Leaderboard() {
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 'bold', color: '#fff' }}>
                     {top2.name}
                   </div>
-                  <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '14px', color: 'var(--neon-yellow)', marginTop: '8px' }}>
-                    {(top2.points || 0).toLocaleString()} PTS
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '8px' }}>
+                    <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '11px', color: 'var(--neon-green)' }}>
+                      🏆 {(top2.high_score || 0).toLocaleString()} BEST
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '14px', color: 'var(--neon-yellow)' }}>
+                      ⭐ {(top2.total_points || top2.points || 0).toLocaleString()} TOTAL
+                    </div>
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
                     {top2.streak} 🔥 • {top2.accuracy}% ACC
@@ -380,8 +449,13 @@ export default function Leaderboard() {
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: '22px', fontWeight: '900', color: '#fff' }}>
                     {top1.name}
                   </div>
-                  <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '18px', color: 'var(--neon-yellow)', marginTop: '8px' }}>
-                    {(top1.points || 0).toLocaleString()} PTS
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
+                    <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '13px', color: 'var(--neon-green)' }}>
+                      🏆 BEST: {(top1.high_score || 0).toLocaleString()} PTS
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '18px', color: 'var(--neon-yellow)' }}>
+                      ⭐ TOTAL: {(top1.total_points || top1.points || 0).toLocaleString()} PTS
+                    </div>
                   </div>
                   <div style={{ fontSize: '13px', color: 'var(--neon-cyan)', marginTop: '4px' }}>
                     {top1.streak} 🔥 Streak • {top1.accuracy}% ACC
@@ -408,8 +482,13 @@ export default function Leaderboard() {
                   <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', fontWeight: 'bold', color: '#fff' }}>
                     {top3.name}
                   </div>
-                  <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '14px', color: 'var(--neon-yellow)', marginTop: '8px' }}>
-                    {(top3.points || 0).toLocaleString()} PTS
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '8px' }}>
+                    <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '11px', color: 'var(--neon-green)' }}>
+                      🏆 {(top3.high_score || 0).toLocaleString()} BEST
+                    </div>
+                    <div style={{ fontFamily: 'var(--font-pixel)', fontSize: '14px', color: 'var(--neon-yellow)' }}>
+                      ⭐ {(top3.total_points || top3.points || 0).toLocaleString()} TOTAL
+                    </div>
                   </div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
                     {top3.streak} 🔥 • {top3.accuracy}% ACC
@@ -442,7 +521,26 @@ export default function Leaderboard() {
                   <th>PLAYER TAG</th>
                   <th>STREAK</th>
                   <th>ACCURACY</th>
-                  <th>SCORE</th>
+                  <th
+                    onClick={() => {
+                      soundFx.playSelect()
+                      setSortBy('high_score')
+                    }}
+                    style={{ cursor: 'pointer', color: sortBy === 'high_score' ? 'var(--neon-green)' : undefined }}
+                    title="Sort by High Score"
+                  >
+                    HIGH SCORE {sortBy === 'high_score' ? '▼' : ''}
+                  </th>
+                  <th
+                    onClick={() => {
+                      soundFx.playSelect()
+                      setSortBy('total')
+                    }}
+                    style={{ cursor: 'pointer', color: sortBy === 'total' ? 'var(--neon-yellow)' : undefined }}
+                    title="Sort by Total Points"
+                  >
+                    TOTAL PTS {sortBy === 'total' ? '▼' : ''}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -474,8 +572,11 @@ export default function Leaderboard() {
                     </td>
                     <td style={{ color: 'var(--neon-pink)' }}>{player.streak} 🔥</td>
                     <td style={{ color: 'var(--neon-green)' }}>{player.accuracy}%</td>
+                    <td style={{ fontFamily: 'var(--font-pixel)', color: 'var(--neon-green)' }}>
+                      {(player.high_score || 0).toLocaleString()} PTS
+                    </td>
                     <td style={{ fontFamily: 'var(--font-pixel)', color: 'var(--neon-yellow)' }}>
-                      {(player.points || 0).toLocaleString()} PTS
+                      {(player.total_points || player.points || 0).toLocaleString()} PTS
                     </td>
                   </tr>
                 ))}
@@ -484,7 +585,7 @@ export default function Leaderboard() {
                 {!isMyRankOnCurrentPage && myRankEntry && (
                   <>
                     <tr>
-                      <td colSpan={5} style={{ textAlign: 'center', padding: '10px 0', borderTop: '2px dashed #334155' }}>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '10px 0', borderTop: '2px dashed #334155' }}>
                         <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '9px', color: 'var(--neon-cyan)', letterSpacing: '2px' }}>
                           ▼ YOUR OWN RANK (PAGE {myRankPage}) ▼
                         </span>
@@ -513,8 +614,11 @@ export default function Leaderboard() {
                       </td>
                       <td style={{ color: 'var(--neon-pink)' }}>{myRankEntry.streak} 🔥</td>
                       <td style={{ color: 'var(--neon-green)' }}>{myRankEntry.accuracy}%</td>
+                      <td style={{ fontFamily: 'var(--font-pixel)', color: 'var(--neon-green)' }}>
+                        {(myRankEntry.high_score || 0).toLocaleString()} PTS
+                      </td>
                       <td style={{ fontFamily: 'var(--font-pixel)', color: 'var(--neon-yellow)' }}>
-                        {(myRankEntry.points || 0).toLocaleString()} PTS
+                        {(myRankEntry.total_points || myRankEntry.points || 0).toLocaleString()} PTS
                       </td>
                     </tr>
                   </>

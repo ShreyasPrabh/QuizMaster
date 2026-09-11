@@ -143,11 +143,12 @@ export default function Profile() {
             {bio}
           </p>
 
-          <div style={{ display: 'flex', gap: '20px', marginTop: '14px', flexWrap: 'wrap', fontFamily: 'var(--font-pixel)', fontSize: '10px' }}>
+          <div style={{ display: 'flex', gap: '16px', marginTop: '14px', flexWrap: 'wrap', fontFamily: 'var(--font-pixel)', fontSize: '10px' }}>
             <span style={{ color: 'var(--neon-yellow)' }}>🪙 {stats.coins || 100} COINS</span>
             <span style={{ color: 'var(--neon-pink)' }}>🔥 {stats.current_streak} DAY STREAK</span>
             <span style={{ color: 'var(--neon-cyan)' }}>🎯 {stats.accuracy}% ACCURACY</span>
-            <span style={{ color: 'var(--neon-green)' }}>🏆 {stats.high_score || 0} HIGH SCORE</span>
+            <span style={{ color: 'var(--neon-green)' }}>🏆 {(stats.high_score || 0).toLocaleString()} BEST RUN</span>
+            <span style={{ color: 'var(--neon-yellow)' }}>⭐ {(stats.total_score || ((stats.correct_solved || 0) * 100) || stats.high_score || 0).toLocaleString()} TOTAL PTS</span>
           </div>
         </div>
       </div>

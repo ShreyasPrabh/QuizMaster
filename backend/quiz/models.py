@@ -88,6 +88,7 @@ class QuizSession(models.Model):
     end_time = models.DateTimeField(null=True, blank=True)
     score = models.IntegerField(default=0)
     total_questions = models.IntegerField(default=0)
+    difficulty = models.CharField(max_length=20, default='intermediate')
 
     def __str__(self):
         return f"{self.user.username} - {self.subtopic.name} ({self.start_time.date()})"
