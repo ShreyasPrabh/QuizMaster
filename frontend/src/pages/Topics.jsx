@@ -10,7 +10,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { getCompletedModules, getTopicCompletion } from '../lib/userStats'
-import { TOPIC_MODULES } from '../data/topicModules'
+import { useQuizCartridges } from '../lib/quizStore'
 import RetroIcon from '../components/RetroIcon'
 import soundFx from '../lib/soundFx'
 
@@ -27,6 +27,7 @@ const DOMAINS = [
 export default function Topics() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { topics: allTopics } = useQuizCartridges()
   const [searchParams, setSearchParams] = useSearchParams()
   const currentSearch = searchParams.get('q') || ''
   const [selectedDomain, setSelectedDomain] = useState('all')
@@ -40,8 +41,6 @@ export default function Topics() {
     window.addEventListener('quizmaster-stats-updated', handleSync)
     return () => window.removeEventListener('quizmaster-stats-updated', handleSync)
   }, [user])
-
-  const allTopics = useMemo(() => Object.values(TOPIC_MODULES), [])
 
   const filteredTopics = useMemo(() => {
     return allTopics.filter((topic) => {

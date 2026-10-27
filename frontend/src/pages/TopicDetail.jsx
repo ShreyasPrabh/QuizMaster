@@ -17,6 +17,7 @@ import {
   getStageTierStats,
 } from '../lib/userStats'
 import { TOPIC_MODULES } from '../data/topicModules'
+import { getLiveTopic } from '../lib/quizStore'
 import RetroIcon from '../components/RetroIcon'
 import soundFx from '../lib/soundFx'
 
@@ -35,9 +36,9 @@ export default function TopicDetail() {
   }, [user])
 
   const key = (topicId || 'java').toLowerCase().replace(/[^a-z0-9]/g, '')
-  const topic = TOPIC_MODULES[key] || TOPIC_MODULES.java
+  const topic = getLiveTopic(topicId) || TOPIC_MODULES[key] || TOPIC_MODULES.java
 
-  const totalQuestions = topic.modules.reduce((acc, m) => {
+  const totalQuestions = (topic?.modules || []).reduce((acc, m) => {
     const easyCount = m.difficulties?.easy?.length || 20
     const medCount = m.difficulties?.intermediate?.length || 20
     const hardCount = m.difficulties?.hard?.length || 20

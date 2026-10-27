@@ -15,7 +15,8 @@ import {
   Zap,
   Flame,
   Menu,
-  X
+  X,
+  ShieldAlert
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import RetroToolbar from './RetroToolbar'
@@ -31,6 +32,7 @@ const navLinks = [
   { to: '/analytics', label: 'Telemetry', icon: BarChart2 },
   { to: '/profile', label: 'Player ID', icon: User },
   { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/admin', label: 'Admin Panel', icon: ShieldAlert, badge: 'STAFF' },
 ]
 
 export default function AppLayout() {
@@ -156,7 +158,22 @@ export default function AppLayout() {
                   }}
                 >
                   <Icon className="sidebar-nav-icon" />
-                  <span>{item.label}</span>
+                  <span style={{ flex: 1 }}>{item.label}</span>
+                  {item.badge && (
+                    <span
+                      className="arcade-tag-chip"
+                      style={{
+                        fontSize: '7px',
+                        padding: '1px 5px',
+                        background: 'rgba(255, 0, 127, 0.2)',
+                        color: 'var(--neon-pink)',
+                        borderColor: 'var(--neon-pink)',
+                        fontWeight: 'bold',
+                      }}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
                 </NavLink>
               )
             })}

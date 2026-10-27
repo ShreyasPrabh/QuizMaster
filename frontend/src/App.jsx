@@ -16,6 +16,7 @@ import AnalyticsPage from './pages/Analytics'
 import Leaderboard from './pages/Leaderboard'
 import Profile from './pages/Profile'
 import Settings from './pages/Settings'
+import Admin from './pages/Admin'
 import AppLayout from './components/AppLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import './App.css'
@@ -58,6 +59,8 @@ function App() {
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin-panel" element={<Admin />} />
         </Route>
 
         {/* Fallback */}

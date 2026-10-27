@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { getUserStats, getQuizHistory, RETRO_ACHIEVEMENTS, getCleanAvatar, isAchievementUnlocked, getTopicCompletion, saveCompletedModules, getTotalStagesCleared } from '../lib/userStats'
 import { TOPIC_MODULES } from '../data/topicModules'
+import { getLiveTopics } from '../lib/quizStore'
 import RetroIcon from '../components/RetroIcon'
 import soundFx from '../lib/soundFx'
 import api from '../lib/api'
@@ -34,7 +35,7 @@ function getResolvedPreferredTopics() {
     } catch {}
   }
 
-  const allTopics = Object.values(TOPIC_MODULES)
+  const allTopics = Object.values(getLiveTopics())
   return list.map((item) => {
     if (typeof item === 'object' && item.topicId) return item
     const str = String(item).toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -58,6 +59,14 @@ export default function Dashboard() {
   const [stats, setStats] = useState(() => getUserStats(user?.id))
   const [history, setHistory] = useState(() => getQuizHistory(user?.id))
   const [preferredTopics, setPreferredTopics] = useState(() => getResolvedPreferredTopics())
+
+  useEffect(() => {
+    const handleTopicsUpdate = () => {
+      setPreferredTopics(getResolvedPreferredTopics())
+    }
+    window.addEventListener('quizmaster-topics-updated', handleTopicsUpdate)
+    return () => window.removeEventListener('quizmaster-topics-updated', handleTopicsUpdate)
+  }, [])
 
   useEffect(() => {
     const handleSync = () => {

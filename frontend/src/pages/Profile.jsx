@@ -204,23 +204,32 @@ export default function Profile() {
                 key={av.id}
                 type="button"
                 onClick={() => handleAvatarSelect(av.emoji)}
-                className="retro-tool-btn"
+                className="avatar-picker-card"
                 style={{
                   background: isSelected ? 'var(--neon-yellow)' : 'var(--bg-secondary)',
                   color: isSelected ? '#000' : '#fff',
-                  borderColor: isSelected ? '#000' : '#333',
+                  borderColor: isSelected ? '#000' : '#444',
+                  border: isSelected ? '3px solid #000' : '2px solid #444',
+                  borderRadius: 'var(--radius-md)',
                   padding: '12px 8px',
+                  display: 'flex',
                   flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   gap: '6px',
                   textAlign: 'center',
                   boxShadow: isSelected ? '4px 4px 0px #000' : '2px 2px 0px #000',
                   position: 'relative',
                   cursor: 'pointer',
                   transform: isSelected ? 'translateY(-2px)' : 'none',
+                  minHeight: '95px',
+                  width: '100%',
                 }}
               >
-                <span style={{ fontSize: '32px', lineHeight: 1.2 }}>{av.emoji}</span>
-                <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px', fontWeight: 'bold' }}>{av.name}</span>
+                <span style={{ fontSize: '32px', lineHeight: 1.2, display: 'block' }}>{av.emoji}</span>
+                <span style={{ fontFamily: 'var(--font-pixel)', fontSize: '8px', fontWeight: 'bold', display: 'block', color: isSelected ? '#000' : '#fff' }}>
+                  {av.name}
+                </span>
                 {isSelected && (
                   <span
                     style={{
@@ -231,6 +240,7 @@ export default function Profile() {
                       padding: '2px 6px',
                       borderRadius: '3px',
                       marginTop: '2px',
+                      display: 'inline-block',
                     }}
                   >
                     ✓ ACTIVE

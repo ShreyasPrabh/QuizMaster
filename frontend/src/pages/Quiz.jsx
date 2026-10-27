@@ -24,6 +24,7 @@ import {
   Coins
 } from 'lucide-react'
 import { TOPIC_MODULES } from '../data/topicModules'
+import { getLiveTopic, useQuizCartridges } from '../lib/quizStore'
 import RetroIcon from '../components/RetroIcon'
 import api from '../lib/api'
 import { useAuth } from '../context/AuthContext'
@@ -62,7 +63,7 @@ export default function Quiz() {
 
   // Resolve topic and active module
   const safeTopicKey = (topicId || 'java').toLowerCase().replace(/[^a-z0-9]/g, '')
-  const topicData = TOPIC_MODULES[safeTopicKey] || TOPIC_MODULES.java
+  const topicData = getLiveTopic(topicId) || TOPIC_MODULES[safeTopicKey] || TOPIC_MODULES.java
 
   const activeModule = useMemo(() => {
     if (!topicData || !topicData.modules) return null
@@ -284,9 +285,9 @@ export default function Quiz() {
   // IF NO TOPIC/MODULE SELECTED (SHOW ARCADE HUB)
   const [searchParams] = useSearchParams()
   const searchQuery = (searchParams.get('q') || '').toLowerCase().trim()
+  const { topics: allTopicList } = useQuizCartridges()
   const [selectedHubTopic, setSelectedHubTopic] = useState('java')
 
-  const allTopicList = useMemo(() => Object.values(TOPIC_MODULES), [])
   const filteredTopics = useMemo(() => {
     if (!searchQuery) return allTopicList
     return allTopicList.filter((topic) =>
@@ -295,7 +296,7 @@ export default function Quiz() {
     )
   }, [searchQuery, allTopicList])
 
-  const hubActiveTopic = TOPIC_MODULES[selectedHubTopic] || TOPIC_MODULES.java
+  const hubActiveTopic = getLiveTopic(selectedHubTopic) || allTopicList[0] || TOPIC_MODULES.java
 
   if (!topicId || !moduleId) {
     return (
